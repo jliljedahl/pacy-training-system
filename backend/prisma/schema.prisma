@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Project metadata
+  name        String
+  status      String   // information_gathering, program_design, article_creation, video_creation, quiz_creation, completed
+  language    String   @default("swedish")
+
+  // Client brief
+  learningObjectives String?
+  targetAudience     String?
+  desiredOutcomes    String?
+  constraints        String?
+
+  // Configuration
+  particularAngle    String?
+  deliverables       String   // articles, articles_videos, articles_videos_quizzes, full_program
+  numChapters        Int?
+  strictFidelity     Boolean  @default(false)
+  quizQuestions      Int      @default(3)
+
+  // Relationships
+  sourceMaterials    SourceMaterial[]
+  programMatrix      ProgramMatrix?
+  chapters           Chapter[]
+  workflowSteps      WorkflowStep[]
+
+  @@index([status])
+}
+
+model SourceMaterial {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  filename   String
+  filepath   String
+  mimetype   String
+  size       Int
+  type       String   // strict_fidelity or context
+
+  @@index([projectId])
+}
+
+model ProgramMatrix {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  projectId  String   @unique
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  overview   String
+  researchBasis String
+  pedagogicalApproach String
+  histAlignment String
+
+  approved   Boolean  @default(false)
+  approvedAt DateTime?
+}
+
+model Chapter {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  number      Int
+  name        String
+  description String
+  interactiveActivity String?
+
+  sessions    Session[]
+
+  @@index([projectId])
+  @@unique([projectId, number])
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapterId   String
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  number      Float    // 1.1, 1.2, etc.
+  name        String
+  description String   // Bullet points of key learnings
+  wiifm       String   // What's in it for me - learning objective
+
+  article     Article?
+  videoScript VideoScript?
+  quiz        Quiz?
+
+  @@index([chapterId])
+  @@unique([chapterId, number])
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessionId   String   @unique
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  content     String
+  wordCount   Int
+  sources     String?  // JSON array of source references
+
+  status      String   // draft, hist_review, fact_check, approved, revision_needed
+  histReview  String?  // HIST compliance review feedback
+  factCheck   String?  // Fact checker feedback
+
+  approved    Boolean  @default(false)
+  approvedAt  DateTime?
+}
+
+model VideoScript {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessionId   String   @unique
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  content     String
+  wordCount   Int
+
+  approved    Boolean  @default(false)
+  approvedAt  DateTime?
+}
+
+model Quiz {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessionId   String   @unique
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  questions   QuizQuestion[]
+
+  approved    Boolean  @default(false)
+  approvedAt  DateTime?
+}
+
+model QuizQuestion {
+  id          String   @id @default(uuid())
+
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  question    String
+  optionA     String
+  optionB     String
+  optionC     String
+  correctAnswer String // a, b, or c
+
+  @@index([quizId])
+}
+
+model WorkflowStep {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  phase       String   // information_gathering, program_design, article_creation, etc.
+  step        String
+  agentName   String?
+  status      String   // pending, in_progress, completed, blocked, failed
+  result      String?  // JSON result from agent
+  error       String?
+
+  @@index([projectId, status])
+}
