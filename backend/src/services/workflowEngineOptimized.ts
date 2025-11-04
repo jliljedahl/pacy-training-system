@@ -434,6 +434,7 @@ Requirements:
   }
 
   private async saveProgramMatrix(projectId: string, matrixResult: string) {
+    // Create ProgramMatrix entry
     await prisma.programMatrix.create({
       data: {
         projectId,
@@ -444,6 +445,65 @@ Requirements:
         approved: false,
       },
     });
+
+    // Parse chapters and sessions from the matrix result
+    // Look for table rows with pattern: | **Kapitel N: Name** | **Session N.M: Name** | ... | ... |
+    const tableRegex = /\|\s*\*\*Kapitel\s+(\d+):\s*([^*]+)\*\*[^|]*\|\s*\*\*Session\s+([\d.]+):\s*([^*]+)\*\*\s*<br><br>([^|]*)\|/g;
+
+    const chaptersMap = new Map<number, { name: string; theme: string; sessions: any[] }>();
+
+    let match;
+    while ((match = tableRegex.exec(matrixResult)) !== null) {
+      const chapterNum = parseInt(match[1]);
+      const chapterName = match[2].trim();
+      const sessionNum = match[3].trim();
+      const sessionName = match[4].trim();
+      const sessionDesc = match[5].trim();
+
+      if (!chaptersMap.has(chapterNum)) {
+        // Extract theme from the chapter row (usually after <br><br>*Tema: ...)
+        const themeMatch = matrixResult.match(new RegExp(`\\*\\*Kapitel\\s+${chapterNum}:[^|]*<br><br>\\*Tema:\\s*([^*]+)\\*`, 'i'));
+        const theme = themeMatch ? themeMatch[1].trim() : '';
+
+        chaptersMap.set(chapterNum, {
+          name: chapterName,
+          theme,
+          sessions: [],
+        });
+      }
+
+      chaptersMap.get(chapterNum)!.sessions.push({
+        number: sessionNum,
+        name: sessionName,
+        description: sessionDesc,
+      });
+    }
+
+    // Create chapters and sessions in database
+    for (const [chapterNum, chapterData] of Array.from(chaptersMap.entries()).sort((a, b) => a[0] - b[0])) {
+      const chapter = await prisma.chapter.create({
+        data: {
+          projectId,
+          number: chapterNum,
+          name: chapterData.name,
+          description: chapterData.theme || `Chapter ${chapterNum} content`,
+        },
+      });
+
+      // Create sessions for this chapter
+      for (const sessionData of chapterData.sessions) {
+        await prisma.session.create({
+          data: {
+            chapterId: chapter.id,
+            number: sessionData.number,
+            name: sessionData.name,
+            learningObjective: sessionData.description,
+          },
+        });
+      }
+    }
+
+    console.log(`✅ Created ${chaptersMap.size} chapters with sessions for project ${projectId}`);
   }
 
   private countWords(text: string): number {
