@@ -337,16 +337,51 @@ export default function ProjectDetail() {
                           )}
 
                           {session.article && (
-                            <a
-                              href={`#article-${session.article.id}`}
+                            <button
+                              onClick={() => {
+                                const element = document.getElementById(`article-${session.article.id}`);
+                                element?.scrollIntoView({ behavior: 'smooth' });
+                              }}
                               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm"
                             >
                               View Article
-                            </a>
+                            </button>
                           )}
                         </div>
                       ))}
                     </div>
+
+                    {/* Display articles for this chapter */}
+                    {chapter.sessions.some((s: any) => s.article) && (
+                      <div className="mt-6 space-y-6">
+                        <h4 className="font-semibold text-gray-700 border-t pt-4">Articles</h4>
+                        {chapter.sessions
+                          .filter((s: any) => s.article)
+                          .map((session: any) => (
+                            <div
+                              key={session.article.id}
+                              id={`article-${session.article.id}`}
+                              className="border-l-4 border-blue-500 pl-4 py-2"
+                            >
+                              <h5 className="font-semibold text-lg mb-2">
+                                Session {session.number}: {session.name}
+                              </h5>
+                              <p className="text-sm text-gray-600 mb-3">
+                                {session.article.wordCount} words • Status: {session.article.status}
+                              </p>
+                              <div className="prose max-w-none">
+                                <ReactMarkdown>{session.article.content}</ReactMarkdown>
+                              </div>
+                              {session.article.factCheck && (
+                                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                  <p className="text-sm font-semibold text-yellow-800">Fact Check Notes:</p>
+                                  <p className="text-sm text-yellow-700">{session.article.factCheck}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (

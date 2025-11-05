@@ -91,18 +91,31 @@ ${project.sourceMaterials.length > 0 ? `
 
 4. **Complete Program Matrix Table**
 
-VIKTIGT: Presentera programmatrisen i EXAKT detta format:
+⚠️ KRITISKT VIKTIGT - FÖLJ DETTA FORMAT EXAKT ⚠️
+
+DU MÅSTE presentera programmatrisen som en MARKDOWN-TABELL.
+INGEN annan text förutom Research Overview och HIST Alignment får finnas utanför tabellen.
+ALLA kapitel och sessioner MÅSTE vara i tabellen.
+
+Börja tabellen direkt efter denna rad:
 
 | Kapitel | Session | Detaljerat innehåll | Learning Objective (WIIFM) |
 |---------|---------|---------------------|----------------------------|
-| **Kapitel 1: [Kapitelnamn]**<br><br>*Tema: [Kort beskrivning av kapitlets fokus]* | **Session 1.1: [Sessionsnamn]**<br><br>[1-2 meningar som beskriver sessionen] | • [Konkret innehållspunkt 1]<br>• [Konkret innehållspunkt 2]<br>• [Konkret innehållspunkt 3]<br>• [Konkret innehållspunkt 4]<br>• [Konkret innehållspunkt 5] | [En mening som förklarar "What's in it for me?" - vad deltagaren konkret kommer att kunna göra efter sessionen] |
+| **Kapitel 1: [Exakt kapitelnamn]**<br><br>*Tema: [Kort tema-beskrivning]* | **Session 1.1: [Exakt sessionsnamn]**<br><br>[1-2 meningar beskrivning] | • [Punkt 1]<br>• [Punkt 2]<br>• [Punkt 3]<br>• [Punkt 4]<br>• [Punkt 5] | [WIIFM-mening] |
+| [SAMMA KAPITEL FORTSÄTTER] | **Session 1.2: [Sessionsnamn]**<br><br>[Beskrivning] | • [Punkt 1]<br>• [Punkt 2]<br>• [Punkt 3]<br>• [Punkt 4]<br>• [Punkt 5] | [WIIFM-mening] |
+| **Kapitel 2: [Nästa kapitel]**<br><br>*Tema: [Tema]* | **Session 2.1: [Sessionsnamn]**<br><br>[Beskrivning] | • [Punkt 1]<br>• [Punkt 2]<br>• [Punkt 3]<br>• [Punkt 4]<br>• [Punkt 5] | [WIIFM-mening] |
 
-EXEMPEL:
+KONKRET EXEMPEL som du MÅSTE följa:
 | Kapitel | Session | Detaljerat innehåll | Learning Objective (WIIFM) |
 |---------|---------|---------------------|----------------------------|
 | **Kapitel 1: Styrelsens grundläggande ansvar**<br><br>*Tema: Förståelse för styrelsens juridiska och strategiska roll* | **Session 1.1: Styrelsens juridiska ramverk**<br><br>En överblick av bostadsrättslagen och styrelsens formella ansvar | • Bostadsrättslagen paragraf 9:2 - styrelsens uppdrag<br>• Skillnad mellan strategiskt ansvar och operativ ledning<br>• Styrelsens firmateckningsrätt och beslutsmandat<br>• Dokumentationskrav och mötesprotokoll<br>• Personligt ansvar kontra föreningsansvar | Du får full klarhet i vad lagen kräver av dig som styrelseledamot och kan tryggt fatta beslut inom ditt mandat |
 
-Skapa hela programmatrisen i detta format med alla kapitel och sessioner.
+REGLER:
+- En rad per session (inte per kapitel!)
+- Kapitelnamn upprepas ENDAST vid första sessionen i varje kapitel
+- Använd <br> för radbrytningar INOM celler
+- Exakt 5 innehållspunkter per session
+- WIIFM ska vara EN mening, börja inte med "Du kommer att..." - skriv direkt vad användaren får
 
 5. **HIST Alignment**
    - How this structure supports micro-learning
@@ -495,9 +508,10 @@ Requirements:
         await prisma.session.create({
           data: {
             chapterId: chapter.id,
-            number: sessionData.number,
+            number: parseFloat(sessionData.number),
             name: sessionData.name,
-            learningObjective: sessionData.description,
+            description: sessionData.description,
+            wiifm: sessionData.description, // Will be extracted properly in future iteration
           },
         });
       }
