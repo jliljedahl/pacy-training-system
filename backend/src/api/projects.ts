@@ -67,6 +67,76 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
+// Parse client brief (extract project info from uploaded document)
+router.post('/parse-brief', async (req, res, next) => {
+  try {
+    if (!req.files || !req.files.brief) {
+      return res.status(400).json({ error: 'No brief file uploaded' });
+    }
+
+    const briefFile = req.files.brief as UploadedFile;
+
+    // Save file temporarily
+    const fileId = uuidv4();
+    const ext = path.extname(briefFile.name);
+    const filename = `brief-${fileId}${ext}`;
+    const uploadDir = path.resolve(process.env.UPLOAD_DIR || '../uploads');
+    const filepath = path.join(uploadDir, filename);
+
+    await fs.mkdir(uploadDir, { recursive: true });
+    await briefFile.mv(filepath);
+
+    // Invoke source-analyst in brief parsing mode
+    const { agentOrchestrator } = require('../services/agentOrchestrator');
+
+    const briefParsingPrompt = `
+MODE: CLIENT BRIEF PARSER
+
+You have been provided with a client brief document at: ${filepath}
+
+Your task is to extract project information and return it in the specified JSON format.
+
+1. Read the document
+2. Extract all relevant project fields
+3. Return JSON with extracted data, confidence levels, and notes
+4. Flag any fields that need human input
+
+Be thorough but pragmatic. If information isn't explicitly stated but can be reasonably inferred, extract it and mark confidence as "medium".
+
+Return your response as valid JSON only.
+`;
+
+    const result = await agentOrchestrator.invokeAgent(
+      'source-analyst',
+      briefParsingPrompt,
+      { filepath }
+    );
+
+    // Parse the JSON response
+    let extractedData;
+    try {
+      // Extract JSON from markdown code blocks if present
+      const jsonMatch = result.match(/```json\s*([\s\S]*?)\s*```/) || result.match(/```\s*([\s\S]*?)\s*```/);
+      const jsonString = jsonMatch ? jsonMatch[1] : result;
+      extractedData = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error('Failed to parse agent response as JSON:', result);
+      return res.status(500).json({
+        error: 'Failed to parse brief',
+        details: 'Agent response was not valid JSON',
+        rawResponse: result.substring(0, 500)
+      });
+    }
+
+    // Clean up temporary file
+    await fs.unlink(filepath).catch(err => console.error('Failed to delete temp file:', err));
+
+    res.json(extractedData);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Create new project
 router.post('/', async (req, res, next) => {
   try {

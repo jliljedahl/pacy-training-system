@@ -25,6 +25,24 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface BriefExtractionResult {
+  extracted: {
+    projectName: string;
+    learningObjectives: string;
+    targetAudience: string;
+    desiredOutcomes: string;
+    deliverables: string;
+    numChapters: number | null;
+    constraints: string | null;
+    particularAngle: string | null;
+    language: string;
+    strictFidelity: boolean;
+  };
+  confidence: Record<string, 'high' | 'medium' | 'low'>;
+  notes: string[];
+  needsHumanInput: string[];
+}
+
 export const projectsApi = {
   getAll: () => api.get<Project[]>('/projects'),
   getOne: (id: string) => api.get<any>(`/projects/${id}`),
@@ -36,6 +54,13 @@ export const projectsApi = {
     formData.append('file', file);
     formData.append('type', type);
     return api.post(`/projects/${id}/source-materials`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  parseBrief: (file: File) => {
+    const formData = new FormData();
+    formData.append('brief', file);
+    return api.post<BriefExtractionResult>('/projects/parse-brief', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
