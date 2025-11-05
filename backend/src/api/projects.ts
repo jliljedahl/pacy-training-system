@@ -92,18 +92,60 @@ router.post('/parse-brief', async (req, res, next) => {
     const briefParsingPrompt = `
 MODE: CLIENT BRIEF PARSER
 
-You have been provided with a client brief document at: ${filepath}
+⚠️ CRITICAL INSTRUCTIONS ⚠️
 
-Your task is to extract project information and return it in the specified JSON format.
+You are in CLIENT BRIEF PARSER mode. A document has been uploaded and saved at:
+${filepath}
 
-1. Read the document
-2. Extract all relevant project fields
-3. Return JSON with extracted data, confidence levels, and notes
-4. Flag any fields that need human input
+STEP 1: USE THE READ TOOL
+You MUST use the Read tool to read the file at the path above. DO NOT skip this step.
 
-Be thorough but pragmatic. If information isn't explicitly stated but can be reasonably inferred, extract it and mark confidence as "medium".
+STEP 2: EXTRACT INFORMATION
+After reading the document, carefully extract these fields:
+- Project Name/Topic
+- Learning Objectives
+- Target Audience
+- Desired Outcomes
+- Deliverables (articles, videos, quizzes, etc.)
+- Number of Chapters (if specified)
+- Constraints (timeline, budget, must-include topics)
+- Particular Angle or Framework
+- Language (swedish/english)
+- Strict Fidelity requirement (is this proprietary content that must be followed exactly?)
 
-Return your response as valid JSON only.
+STEP 3: RETURN VALID JSON
+Return ONLY valid JSON in this exact format (no additional text):
+
+\`\`\`json
+{
+  "extracted": {
+    "projectName": "extracted name or [NEEDS INPUT]",
+    "learningObjectives": "extracted objectives or [NEEDS INPUT]",
+    "targetAudience": "extracted audience or [NEEDS INPUT]",
+    "desiredOutcomes": "extracted outcomes or [NEEDS INPUT]",
+    "deliverables": "articles",
+    "numChapters": null,
+    "constraints": null,
+    "particularAngle": null,
+    "language": "swedish",
+    "strictFidelity": false
+  },
+  "confidence": {
+    "projectName": "high",
+    "learningObjectives": "high",
+    "targetAudience": "medium",
+    "desiredOutcomes": "medium"
+  },
+  "notes": ["Any important observations"],
+  "needsHumanInput": ["Fields that need clarification"]
+}
+\`\`\`
+
+REMEMBER:
+- First READ the file using the Read tool
+- Be accurate - extract what's actually in the document
+- Use [NEEDS INPUT] for missing information
+- Mark confidence honestly
 `;
 
     const result = await agentOrchestrator.invokeAgent(
