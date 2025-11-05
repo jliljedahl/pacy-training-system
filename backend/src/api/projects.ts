@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import prisma from '../db/client';
 import { UploadedFile } from 'express-fileupload';
+const pdfParse = require('pdf-parse');
+import mammoth from 'mammoth';
 
 const router = Router();
 
@@ -75,33 +77,55 @@ router.post('/parse-brief', async (req, res, next) => {
     }
 
     const briefFile = req.files.brief as UploadedFile;
+    const ext = path.extname(briefFile.name).toLowerCase();
 
-    // Save file temporarily
-    const fileId = uuidv4();
-    const ext = path.extname(briefFile.name);
-    const filename = `brief-${fileId}${ext}`;
-    const uploadDir = path.resolve(process.env.UPLOAD_DIR || '../uploads');
-    const filepath = path.join(uploadDir, filename);
+    // Read file content directly in backend
+    let briefText = '';
 
-    await fs.mkdir(uploadDir, { recursive: true });
-    await briefFile.mv(filepath);
+    try {
+      if (ext === '.pdf') {
+        // Parse PDF
+        const pdfData = await pdfParse(briefFile.data);
+        briefText = pdfData.text;
+      } else if (ext === '.docx' || ext === '.doc') {
+        // Parse DOCX
+        const result = await mammoth.extractRawText({ buffer: briefFile.data });
+        briefText = result.value;
+      } else if (ext === '.txt') {
+        // Plain text
+        briefText = briefFile.data.toString('utf-8');
+      } else {
+        return res.status(400).json({ error: 'Unsupported file type. Please upload PDF, DOCX, or TXT' });
+      }
+    } catch (parseError) {
+      console.error('File parsing error:', parseError);
+      return res.status(500).json({ error: 'Failed to read document content' });
+    }
 
-    // Invoke source-analyst in brief parsing mode
+    if (!briefText || briefText.trim().length === 0) {
+      return res.status(400).json({ error: 'Document appears to be empty or could not be read' });
+    }
+
+    console.log(`📄 Extracted ${briefText.length} characters from ${briefFile.name}`);
+
+    // Invoke source-analyst with the actual document content
     const { agentOrchestrator } = require('../services/agentOrchestrator');
 
     const briefParsingPrompt = `
 MODE: CLIENT BRIEF PARSER
 
-⚠️ CRITICAL INSTRUCTIONS ⚠️
+⚠️ DOCUMENT CONTENT PROVIDED BELOW ⚠️
 
-You are in CLIENT BRIEF PARSER mode. A document has been uploaded and saved at:
-${filepath}
+You are analyzing a client brief document. The full text content is provided below.
 
-STEP 1: USE THE READ TOOL
-You MUST use the Read tool to read the file at the path above. DO NOT skip this step.
+Extract project information and return ONLY valid JSON in the specified format.
 
-STEP 2: EXTRACT INFORMATION
-After reading the document, carefully extract these fields:
+DOCUMENT CONTENT:
+---
+${briefText}
+---
+
+Extract these fields FROM THE DOCUMENT ABOVE:
 - Project Name/Topic
 - Learning Objectives
 - Target Audience
@@ -111,10 +135,8 @@ After reading the document, carefully extract these fields:
 - Constraints (timeline, budget, must-include topics)
 - Particular Angle or Framework
 - Language (swedish/english)
-- Strict Fidelity requirement (is this proprietary content that must be followed exactly?)
 
-STEP 3: RETURN VALID JSON
-Return ONLY valid JSON in this exact format (no additional text):
+Return ONLY valid JSON (no preamble, no explanation):
 
 \`\`\`json
 {
@@ -133,25 +155,18 @@ Return ONLY valid JSON in this exact format (no additional text):
   "confidence": {
     "projectName": "high",
     "learningObjectives": "high",
-    "targetAudience": "medium",
-    "desiredOutcomes": "medium"
+    "targetAudience": "high",
+    "desiredOutcomes": "high"
   },
-  "notes": ["Any important observations"],
-  "needsHumanInput": ["Fields that need clarification"]
+  "notes": [],
+  "needsHumanInput": []
 }
 \`\`\`
-
-REMEMBER:
-- First READ the file using the Read tool
-- Be accurate - extract what's actually in the document
-- Use [NEEDS INPUT] for missing information
-- Mark confidence honestly
 `;
 
     const result = await agentOrchestrator.invokeAgent(
       'source-analyst',
-      briefParsingPrompt,
-      { filepath }
+      briefParsingPrompt
     );
 
     // Parse the JSON response
@@ -169,9 +184,6 @@ REMEMBER:
         rawResponse: result.substring(0, 500)
       });
     }
-
-    // Clean up temporary file
-    await fs.unlink(filepath).catch(err => console.error('Failed to delete temp file:', err));
 
     res.json(extractedData);
   } catch (error) {
