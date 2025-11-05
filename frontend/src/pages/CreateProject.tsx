@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload } from 'lucide-react';
-import { projectsApi } from '../services/api';
+import { Upload, FileText, Edit3 } from 'lucide-react';
+import { projectsApi, BriefExtractionResult } from '../services/api';
 
 export default function CreateProject() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+
+  // Brief upload mode
+  const [mode, setMode] = useState<'manual' | 'upload'>('manual');
+  const [briefFile, setBriefFile] = useState<File | null>(null);
+  const [extractedData, setExtractedData] = useState<BriefExtractionResult | null>(null);
+  const [parsing, setParsing] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -50,15 +56,167 @@ export default function CreateProject() {
     }
   };
 
+  const handleBriefUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    setBriefFile(file);
+    setParsing(true);
+
+    try {
+      const response = await projectsApi.parseBrief(file);
+      setExtractedData(response.data);
+
+      // Pre-fill form data with extracted information
+      const extracted = response.data.extracted;
+      setFormData({
+        name: extracted.projectName !== '[NEEDS INPUT]' ? extracted.projectName : '',
+        language: extracted.language !== '[NEEDS INPUT]' ? extracted.language : 'swedish',
+        learningObjectives: extracted.learningObjectives !== '[NEEDS INPUT]' ? extracted.learningObjectives : '',
+        targetAudience: extracted.targetAudience !== '[NEEDS INPUT]' ? extracted.targetAudience : '',
+        desiredOutcomes: extracted.desiredOutcomes !== '[NEEDS INPUT]' ? extracted.desiredOutcomes : '',
+        constraints: extracted.constraints || '',
+        particularAngle: extracted.particularAngle || '',
+        deliverables: extracted.deliverables !== '[NEEDS INPUT]' ? extracted.deliverables : 'articles',
+        strictFidelity: extracted.strictFidelity,
+        quizQuestions: 3,
+      });
+    } catch (error) {
+      console.error('Failed to parse brief:', error);
+      alert('Failed to parse brief document. Please try again or fill the form manually.');
+    } finally {
+      setParsing(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Training Program</h1>
 
+      {/* Mode Toggle */}
+      <div className="mb-8 flex gap-4">
+        <button
+          type="button"
+          onClick={() => setMode('manual')}
+          className={`flex-1 py-3 px-6 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+            mode === 'manual'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Edit3 className="w-5 h-5" />
+          Fill Form Manually
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('upload')}
+          className={`flex-1 py-3 px-6 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+            mode === 'upload'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <FileText className="w-5 h-5" />
+          Upload Client Brief
+        </button>
+      </div>
+
+      {/* Brief Upload Section */}
+      {mode === 'upload' && !extractedData && (
+        <div className="mb-8 border-2 border-dashed border-gray-300 rounded-lg p-8">
+          <input
+            type="file"
+            accept=".pdf,.docx,.doc,.txt"
+            onChange={handleBriefUpload}
+            className="hidden"
+            id="brief-upload"
+            disabled={parsing}
+          />
+          <label htmlFor="brief-upload" className="cursor-pointer flex flex-col items-center">
+            <FileText className="w-16 h-16 text-blue-500" />
+            <span className="mt-4 text-lg font-medium text-gray-700">
+              Upload Client Brief Document
+            </span>
+            <span className="mt-2 text-sm text-gray-500">
+              PDF, DOCX, or TXT file containing project information
+            </span>
+            {parsing && (
+              <div className="mt-4 flex items-center gap-2 text-blue-600">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <span>Analyzing brief document...</span>
+              </div>
+            )}
+          </label>
+        </div>
+      )}
+
+      {/* Extraction Preview */}
+      {mode === 'upload' && extractedData && (
+        <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Brief Extracted Successfully</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Review and edit the extracted information below before creating the project
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setExtractedData(null);
+                setBriefFile(null);
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              Upload Different Brief
+            </button>
+          </div>
+
+          {/* Show confidence levels and notes */}
+          {extractedData.needsHumanInput.length > 0 && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+              <p className="text-sm font-medium text-yellow-800 mb-2">
+                ⚠️ Some fields need your input:
+              </p>
+              <ul className="text-sm text-yellow-700 list-disc list-inside">
+                {extractedData.needsHumanInput.map((field, idx) => (
+                  <li key={idx}>{field}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {extractedData.notes.length > 0 && (
+            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded">
+              <p className="text-sm font-medium text-gray-800 mb-2">📝 Notes:</p>
+              <ul className="text-sm text-gray-700 list-disc list-inside">
+                {extractedData.notes.map((note, idx) => (
+                  <li key={idx}>{note}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Project Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             Project Name *
+            {extractedData && (
+              <span
+                className={`text-xs px-2 py-0.5 rounded ${
+                  extractedData.confidence.projectName === 'high'
+                    ? 'bg-green-100 text-green-800'
+                    : extractedData.confidence.projectName === 'medium'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {extractedData.confidence.projectName} confidence
+              </span>
+            )}
           </label>
           <input
             type="text"
@@ -85,8 +243,21 @@ export default function CreateProject() {
 
         {/* Learning Objectives */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             Learning Objectives
+            {extractedData && (
+              <span
+                className={`text-xs px-2 py-0.5 rounded ${
+                  extractedData.confidence.learningObjectives === 'high'
+                    ? 'bg-green-100 text-green-800'
+                    : extractedData.confidence.learningObjectives === 'medium'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {extractedData.confidence.learningObjectives} confidence
+              </span>
+            )}
           </label>
           <textarea
             value={formData.learningObjectives}
@@ -99,8 +270,21 @@ export default function CreateProject() {
 
         {/* Target Audience */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             Target Audience
+            {extractedData && (
+              <span
+                className={`text-xs px-2 py-0.5 rounded ${
+                  extractedData.confidence.targetAudience === 'high'
+                    ? 'bg-green-100 text-green-800'
+                    : extractedData.confidence.targetAudience === 'medium'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {extractedData.confidence.targetAudience} confidence
+              </span>
+            )}
           </label>
           <textarea
             value={formData.targetAudience}
