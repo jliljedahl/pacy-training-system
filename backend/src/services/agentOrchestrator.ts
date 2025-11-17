@@ -3,8 +3,15 @@ import prisma from '../db/client';
 import fs from 'fs/promises';
 import path from 'path';
 
+// Validate API key on startup
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn('⚠️  WARNING: ANTHROPIC_API_KEY not found in environment variables');
+  console.warn('⚠️  API calls will fail. Please set ANTHROPIC_API_KEY in your .env file');
+}
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 120000, // 2 minute timeout
 });
 
 export interface AgentConfig {
@@ -88,9 +95,15 @@ export class AgentOrchestrator {
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        // Add small delay between agent calls to avoid rate limits
+        // Add progressive delay between agent calls to avoid rate limits
         if (attempt === 0) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+          const baseDelay = 3000; // 3 second base delay
+          await new Promise(resolve => setTimeout(resolve, baseDelay));
+        }
+
+        // Validate API key before making request
+        if (!process.env.ANTHROPIC_API_KEY) {
+          throw new Error('ANTHROPIC_API_KEY is not set. Please configure your API key in the .env file.');
         }
 
         const response = await anthropic.messages.create({
@@ -103,6 +116,12 @@ export class AgentOrchestrator {
               content: fullPrompt,
             },
           ],
+        }).catch((error: any) => {
+          // Add more context to the error
+          if (!error.status && !error.message) {
+            throw new Error(`API request failed: ${JSON.stringify(error)}`);
+          }
+          throw error;
         });
 
         const result = response.content
@@ -114,8 +133,36 @@ export class AgentOrchestrator {
 
         return result;
       } catch (error: any) {
-        const isRateLimit = error.status === 429 || error.message?.includes('rate_limit');
+        const errorStatus = error.status || error.statusCode;
+        const errorMessage = error.message || String(error);
+        
+        // Check for different types of API errors
+        const isRateLimit = errorStatus === 429 || 
+                           errorMessage.includes('rate_limit') || 
+                           errorMessage.includes('too many requests');
+        const isAuthError = errorStatus === 401 || 
+                          errorStatus === 403 ||
+                          errorMessage.includes('api key') ||
+                          errorMessage.includes('authentication') ||
+                          errorMessage.includes('unauthorized');
+        const isTimeout = errorMessage.includes('timeout') || 
+                         errorMessage.includes('ETIMEDOUT') ||
+                         errorMessage.includes('ECONNRESET');
+        const isServerError = errorStatus >= 500 && errorStatus < 600;
 
+        // Log detailed error for debugging
+        console.error(`API Error for ${agentName}:`, {
+          status: errorStatus,
+          message: errorMessage,
+          type: isRateLimit ? 'rate_limit' : 
+                isAuthError ? 'auth_error' : 
+                isTimeout ? 'timeout' : 
+                isServerError ? 'server_error' : 'unknown',
+          attempt: attempt + 1,
+          retries: retries
+        });
+
+        // Handle rate limits with exponential backoff
         if (isRateLimit && attempt < retries) {
           const waitTime = Math.pow(2, attempt) * 15000; // 15s, 30s, 60s
           onProgress?.(`⏳ Rate limit hit. Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`);
@@ -123,7 +170,34 @@ export class AgentOrchestrator {
           continue;
         }
 
-        onProgress?.(`❌ ${agentName} failed: ${error.message}`);
+        // Handle auth errors - don't retry, fail immediately
+        if (isAuthError) {
+          onProgress?.(`❌ Authentication error: ${errorMessage}. Please check your API key.`);
+          throw new Error(`API Authentication failed: ${errorMessage}. Please check your ANTHROPIC_API_KEY environment variable.`);
+        }
+
+        // Handle timeouts - retry with longer delay
+        if (isTimeout && attempt < retries) {
+          const waitTime = 10000 * (attempt + 1); // 10s, 20s, 30s
+          onProgress?.(`⏳ Connection timeout. Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        // Handle server errors - retry with exponential backoff
+        if (isServerError && attempt < retries) {
+          const waitTime = Math.pow(2, attempt) * 10000; // 10s, 20s, 40s
+          onProgress?.(`⏳ Server error (${errorStatus}). Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        // For other errors, provide detailed message
+        const detailedMessage = errorStatus 
+          ? `Status ${errorStatus}: ${errorMessage}`
+          : errorMessage;
+        
+        onProgress?.(`❌ ${agentName} failed: ${detailedMessage}`);
         throw error;
       }
     }

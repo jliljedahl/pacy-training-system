@@ -123,6 +123,233 @@ export const workflowApi = {
   reviseArticle: (articleId: string, feedback: string) =>
     api.post(`/workflow/articles/${articleId}/revise`, { feedback }),
   getProgress: (projectId: string) => api.get(`/workflow/projects/${projectId}/progress`),
+  
+  batchCreateArticles: (chapterId: string, onProgress: (message: string) => void) => {
+    const eventSource = new EventSource(`/api/workflow/chapters/${chapterId}/articles/batch`);
+
+    return new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress') {
+          onProgress(data.message);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.result);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        reject(new Error('Connection failed'));
+      };
+    });
+  },
+  batchCreateAllArticles: (projectId: string, onProgress: (message: string) => void) => {
+    const eventSource = new EventSource(`/api/workflow/projects/${projectId}/articles/batch-all`);
+
+    return new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress') {
+          onProgress(data.message);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.result);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        reject(new Error('Connection failed'));
+      };
+    });
+  },
+  createVideo: (sessionId: string, onProgress: (message: string) => void) => {
+    const eventSource = new EventSource(`/api/workflow/sessions/${sessionId}/video`);
+
+    return new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress') {
+          onProgress(data.message);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.result);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        reject(new Error('Connection failed'));
+      };
+    });
+  },
+  batchCreateVideos: (projectId: string, onProgress: (message: string) => void) => {
+    const eventSource = new EventSource(`/api/workflow/projects/${projectId}/videos/batch`);
+
+    return new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress') {
+          onProgress(data.message);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.result);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        reject(new Error('Connection failed'));
+      };
+    });
+  },
+  approveVideo: (videoId: string) => api.post(`/workflow/videos/${videoId}/approve`),
+  createQuiz: (sessionId: string, numQuestions?: number, onProgress?: (message: string) => void) => {
+    const url = `/api/workflow/sessions/${sessionId}/quiz${numQuestions ? `?numQuestions=${numQuestions}` : ''}`;
+    const eventSource = new EventSource(url);
+
+    return new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress' && onProgress) {
+          onProgress(data.message);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.result);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        reject(new Error('Connection failed'));
+      };
+    });
+  },
+  batchCreateQuizzes: (projectId: string, numQuestions?: number, onProgress?: (message: string) => void) => {
+    const url = `/api/workflow/projects/${projectId}/quizzes/batch${numQuestions ? `?numQuestions=${numQuestions}` : ''}`;
+    const eventSource = new EventSource(url);
+
+    return new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress' && onProgress) {
+          onProgress(data.message);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.result);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        reject(new Error('Connection failed'));
+      };
+    });
+  },
+  approveQuiz: (quizId: string) => api.post(`/workflow/quizzes/${quizId}/approve`),
+  createTestSession: (sessionId: string, onProgress: (message: string) => void) => {
+    const eventSource = new EventSource(`/api/workflow/sessions/${sessionId}/test-session`);
+
+    return new Promise((resolve, reject) => {
+      let hasReceivedData = false;
+      const timeout = setTimeout(() => {
+        if (!hasReceivedData) {
+          eventSource.close();
+          reject(new Error('Connection timeout - backend may not be running. Check that backend is running on port 3000.'));
+        }
+      }, 5000);
+
+      eventSource.onopen = () => {
+        hasReceivedData = true;
+        clearTimeout(timeout);
+        onProgress('🔌 Connected to backend...');
+      };
+
+      eventSource.onmessage = (event) => {
+        hasReceivedData = true;
+        clearTimeout(timeout);
+        
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'progress') {
+            onProgress(data.message);
+          } else if (data.type === 'complete') {
+            eventSource.close();
+            resolve(data.result);
+          } else if (data.type === 'error') {
+            eventSource.close();
+            reject(new Error(data.message));
+          }
+        } catch (error) {
+          console.error('Error parsing SSE data:', error);
+          onProgress(`⚠️ Error: ${error}`);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        eventSource.close();
+        clearTimeout(timeout);
+        console.error('EventSource error:', error);
+        reject(new Error('Connection failed. Make sure backend is running on port 3000.'));
+      };
+    });
+  },
+  saveFeedback: (type: 'article' | 'video' | 'quiz', id: string, feedback: string) =>
+    api.post(`/workflow/feedback/${type}/${id}`, { feedback }),
+  updateContent: (type: 'article' | 'video', id: string, content: string, wordCount?: number) =>
+    api.patch(`/workflow/content/${type}/${id}`, { content, wordCount }),
+  updateQuizQuestions: (quizId: string, questions: any[]) =>
+    api.patch(`/workflow/quizzes/${quizId}/questions`, { questions }),
+  batchCreateChapterComplete: (chapterId: string, onProgress: (message: string) => void) => {
+    const eventSource = new EventSource(`/api/workflow/chapters/${chapterId}/batch-complete`);
+
+    return new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress') {
+          onProgress(data.message);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.result);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        reject(new Error('Connection failed'));
+      };
+    });
+  },
 };
 
 export const contentApi = {

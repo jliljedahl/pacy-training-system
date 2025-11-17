@@ -42,9 +42,10 @@ export default function CreateProject() {
       }
 
       navigate(`/projects/${projectId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create project:', error);
-      alert('Failed to create project');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to create project. Make sure the backend server is running.';
+      alert(`Failed to create project:\n\n${errorMessage}\n\nCheck the browser console (F12) for more details.`);
     } finally {
       setLoading(false);
     }
@@ -91,39 +92,42 @@ export default function CreateProject() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Training Program</h1>
+      <div className="mb-12">
+        <h1 className="text-5xl font-semibold text-[#1d1d1f] mb-3 tracking-tight">Create New Training Program</h1>
+        <p className="text-[#86868b] text-lg">Start building your AI-powered training content</p>
+      </div>
 
-      {/* Mode Toggle */}
-      <div className="mb-8 flex gap-4">
+      {/* Mode Toggle - Premium Design */}
+      <div className="mb-10 flex gap-3 bg-white rounded-2xl p-2 subtle-shadow border border-gray-100/50">
         <button
           type="button"
           onClick={() => setMode('manual')}
-          className={`flex-1 py-3 px-6 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 px-6 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
             mode === 'manual'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-[#007AFF] text-white shadow-sm'
+              : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
           }`}
         >
-          <Edit3 className="w-5 h-5" />
+          <Edit3 className="w-4 h-4" />
           Fill Form Manually
         </button>
         <button
           type="button"
           onClick={() => setMode('upload')}
-          className={`flex-1 py-3 px-6 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 px-6 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
             mode === 'upload'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-[#007AFF] text-white shadow-sm'
+              : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
           }`}
         >
-          <FileText className="w-5 h-5" />
+          <FileText className="w-4 h-4" />
           Upload Client Brief
         </button>
       </div>
 
-      {/* Brief Upload Section */}
+      {/* Brief Upload Section - Premium Design */}
       {mode === 'upload' && !extractedData && (
-        <div className="mb-8 border-2 border-dashed border-gray-300 rounded-lg p-8">
+        <div className="mb-10 bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 hover:border-[#007AFF]/30 transition-colors">
           <input
             type="file"
             accept=".pdf,.docx,.doc,.txt"
@@ -133,17 +137,19 @@ export default function CreateProject() {
             disabled={parsing}
           />
           <label htmlFor="brief-upload" className="cursor-pointer flex flex-col items-center">
-            <FileText className="w-16 h-16 text-blue-500" />
-            <span className="mt-4 text-lg font-medium text-gray-700">
+            <div className="w-20 h-20 rounded-full bg-[#f5f5f7] flex items-center justify-center mb-6">
+              <FileText className="w-10 h-10 text-[#007AFF]" />
+            </div>
+            <span className="text-xl font-semibold text-[#1d1d1f] mb-2">
               Upload Client Brief Document
             </span>
-            <span className="mt-2 text-sm text-gray-500">
+            <span className="text-[#86868b] text-sm mb-6">
               PDF, DOCX, or TXT file containing project information
             </span>
             {parsing && (
-              <div className="mt-4 flex items-center gap-2 text-blue-600">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span>Analyzing brief document...</span>
+              <div className="flex items-center gap-3 text-[#007AFF]">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#007AFF] border-t-transparent"></div>
+                <span className="text-sm font-medium">Analyzing brief document...</span>
               </div>
             )}
           </label>
@@ -199,19 +205,19 @@ export default function CreateProject() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-2xl p-10 subtle-shadow border border-gray-100/50">
         {/* Project Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+          <label className="block text-sm font-semibold text-[#1d1d1f] mb-3 flex items-center gap-2">
             Project Name *
             {extractedData && (
               <span
-                className={`text-xs px-2 py-0.5 rounded ${
+                className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
                   extractedData.confidence.projectName === 'high'
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-[#e8f5e9] text-[#34c759] border border-[#34c759]/20'
                     : extractedData.confidence.projectName === 'medium'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
+                    ? 'bg-[#fff4e6] text-[#ff9500] border border-[#ff9500]/20'
+                    : 'bg-[#ffe5e5] text-[#ff3b30] border border-[#ff3b30]/20'
                 }`}
               >
                 {extractedData.confidence.projectName} confidence
@@ -223,7 +229,7 @@ export default function CreateProject() {
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa] text-[#1d1d1f] placeholder:text-[#86868b] transition-all"
             placeholder="e.g., Brand Building Fundamentals"
           />
         </div>
@@ -403,18 +409,25 @@ export default function CreateProject() {
         </div>
 
         {/* Submit */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 pt-6 border-t border-gray-100">
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition font-medium"
+            className="flex-1 premium-button text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {loading ? 'Creating...' : 'Create Project'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Creating...
+              </span>
+            ) : (
+              'Create Project'
+            )}
           </button>
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            className="px-6 py-3 border border-gray-200 text-[#1d1d1f] rounded-xl hover:bg-[#f5f5f7] transition-colors font-medium text-sm"
           >
             Cancel
           </button>

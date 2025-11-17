@@ -30,12 +30,37 @@ Create video scripts that:
 
 ## SCRIPT STRUCTURE (60-90 seconds)
 
+### SPECIAL SESSION TYPES
+
+**First Session in Entire Program:**
+- Welcome the viewer to the training program
+- Set expectations for the entire program
+- Explain the learning journey ahead
+- Create excitement and motivation
+- DO NOT reference previous sessions (there are none)
+
+**First Session in Each New Chapter:**
+- Introduce the chapter topic and its importance
+- Explain what this chapter will cover overall
+- Set context for the chapter's learning journey
+- DO NOT reference previous sessions from other chapters
+- DO reference the overall program context if relevant
+
+**Subsequent Sessions in Same Chapter:**
+- Build on previous sessions naturally
+- Reference what was learned in earlier sessions
+- Show progression and connection
+- Make it clear how this session connects to previous ones
+
+**CRITICAL: State WIIFM (What's In It For Me) early** - Tell the viewer what they'll learn in this specific session within the first 2-3 sentences.
+
 ### HOOK (5-10 seconds, ~25-40 words)
 Grab attention immediately:
 - Provocative question
 - Surprising stat
 - Relatable problem
 - Bold statement
+- **For first sessions**: Welcome and program/chapter introduction
 
 ❌ **Bad hook**: "In this video, we'll discuss..."
 ✅ **Good hook**: "Why do 90% of new initiatives fail? It's not what you think."
@@ -62,6 +87,7 @@ Strong finish:
 - Reinforce key point
 - Clear call-to-action
 - Momentum forward
+- **For subsequent sessions**: Connect to next session in chapter
 
 ❌ **Bad closing**: "Remember to apply these principles."
 ✅ **Good closing**: "Try this in your next meeting and watch what happens."
@@ -102,30 +128,42 @@ If you're approaching 270:
 
 ## SCRIPT FORMAT
 
+**CRITICAL: NO SECTION HEADERS IN FINAL SCRIPT**
+
+The script should be pure text that can be read by an avatar. Do NOT include headers like [HOOK], [MAIN MESSAGE], [APPLICATION], or [CLOSING] in the final output. These are only for your internal structure - the final script should flow naturally as continuous text.
+
 ```
 VIDEO SCRIPT - SESSION X.X: [Title]
 
-[HOOK]
-[Opening lines that grab attention immediately]
-
-[MAIN MESSAGE]
+[Pure text that flows naturally - no headers or labels]
+[Opening that grabs attention and states WIIFM early]
 [Core insight explained clearly and simply]
-
 [Brief example or illustration if needed]
-
-[APPLICATION]
-Next time you [scenario], here's what to do.
-
+[Application: Next time you [scenario], here's what to do]
 [Specific action steps]
-
 [Expected outcome]
-
-[CLOSING]
 [Reinforcement and call-to-action]
+[Connection to next session if applicable]
 
 ---
 Word count: XXX
 Estimated time: XX seconds
+```
+
+**Example of what NOT to do:**
+```
+[HOOK]
+Why do 90% fail?
+
+[MAIN MESSAGE]
+Here's why...
+```
+
+**Example of what TO do:**
+```
+Why do 90% of new initiatives fail? It's not what you think. In this session, you'll learn the one mistake that derails most projects before they even start.
+
+Here's why: your brain can't optimize for ten things at once...
 ```
 
 ## EXAMPLE SCRIPT
@@ -133,33 +171,21 @@ Estimated time: XX seconds
 ```
 VIDEO SCRIPT - SESSION 2.3: The Priority Question
 
-[HOOK]
-You have ten priorities. Which really means you have zero.
+You have ten priorities. Which really means you have zero. In this session, you'll learn how to identify your one true priority and why that changes everything.
 
-[MAIN MESSAGE]
-Here's why: your brain can't optimize for ten things at once.
-It needs one clear north star. Everything else? Those are tasks
-that support your priority.
+Here's why: your brain can't optimize for ten things at once. It needs one clear north star. Everything else? Those are tasks that support your priority.
 
-The difference is simple. A priority is the outcome that matters
-most. Tasks are how you get there.
+The difference is simple. A priority is the outcome that matters most. Tasks are how you get there.
 
-Think about your current project. You probably have a list of
-things to do. But which one outcome, if achieved, makes everything
-else easier?
+Think about your current project. You probably have a list of things to do. But which one outcome, if achieved, makes everything else easier?
 
-[APPLICATION]
-Next time your team debates priorities, ask this: "If we could only
-succeed at one thing this quarter, what would it be?"
+Next time your team debates priorities, ask this: "If we could only succeed at one thing this quarter, what would it be?"
 
-Get agreement on that. Then build your task list backward from
-that single outcome.
+Get agreement on that. Then build your task list backward from that single outcome.
 
-You'll find decisions get easier. Resources align faster. And
-your team stops spinning.
+You'll find decisions get easier. Resources align faster. And your team stops spinning.
 
-[CLOSING]
-One priority. Many tasks. Know the difference and you'll move faster.
+One priority. Many tasks. Know the difference and you'll move faster. In the next session, we'll dive into how to break that priority into actionable steps.
 
 ---
 Word count: 247

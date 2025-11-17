@@ -1,5 +1,4 @@
 import express from 'express';
-import expressWs from 'express-ws';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 import dotenv from 'dotenv';
@@ -14,7 +13,6 @@ import workflowRoutes from './api/workflow';
 import contentRoutes from './api/content';
 
 const app = express();
-const { app: wsApp } = expressWs(app);
 
 // Middleware
 app.use(cors());
@@ -40,10 +38,27 @@ app.get('/health', (req, res) => {
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  console.error('❌ Express Error Handler:', {
+    message: err.message,
+    stack: err.stack,
+    status: err.status || 500,
+    path: req.path,
+    method: req.method,
+    name: err.name,
+    code: err.code,
+  });
+
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(process.env.NODE_ENV === 'development' && { 
+      stack: err.stack,
+      details: {
+        name: err.name,
+        code: err.code,
+        path: req.path,
+        method: req.method,
+      }
+    }),
   });
 });
 

@@ -4,37 +4,21 @@ import path from 'path';
 import fs from 'fs/promises';
 import prisma from '../db/client';
 import { UploadedFile } from 'express-fileupload';
-const pdfParse = require('pdf-parse');
 import mammoth from 'mammoth';
+const pdfParse = require('pdf-parse');
 
 const router = Router();
 
 // Get all projects
 router.get('/', async (req, res, next) => {
   try {
+    console.log('[GET /api/projects] Fetching all projects...');
+    
+    // First, check database connection
+    await prisma.$connect();
+    
     const projects = await prisma.project.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
-        sourceMaterials: true,
-        programMatrix: true,
-        chapters: {
-          include: {
-            sessions: true,
-          },
-        },
-      },
-    });
-    res.json(projects);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get single project
-router.get('/:id', async (req, res, next) => {
-  try {
-    const project = await prisma.project.findUnique({
-      where: { id: req.params.id },
       include: {
         sourceMaterials: true,
         programMatrix: true,
@@ -50,8 +34,57 @@ router.get('/:id', async (req, res, next) => {
                   },
                 },
               },
+              orderBy: { number: 'asc' },
             },
           },
+          orderBy: { number: 'asc' },
+        },
+      },
+    });
+    console.log(`[GET /api/projects] Found ${projects.length} projects`);
+    res.json(projects);
+  } catch (error: any) {
+    console.error('[GET /api/projects] Error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+    });
+    res.status(500).json({
+      error: 'Failed to fetch projects',
+      message: error.message,
+      ...(process.env.NODE_ENV === 'development' && { details: error.stack }),
+    });
+  }
+});
+
+// Get single project
+router.get('/:id', async (req, res, next) => {
+  try {
+    const projectId = req.params.id;
+    console.log(`[GET /api/projects/:id] Fetching project ${projectId}...`);
+    
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        sourceMaterials: true,
+        programMatrix: true,
+        chapters: {
+          include: {
+            sessions: {
+              include: {
+                article: true,
+                videoScript: true,
+                quiz: {
+                  include: {
+                    questions: true,
+                  },
+                },
+              },
+              orderBy: { number: 'asc' },
+            },
+          },
+          orderBy: { number: 'asc' },
         },
         workflowSteps: {
           orderBy: { createdAt: 'asc' },
@@ -60,11 +93,18 @@ router.get('/:id', async (req, res, next) => {
     });
 
     if (!project) {
+      console.log(`[GET /api/projects/:id] Project ${projectId} not found`);
       return res.status(404).json({ error: 'Project not found' });
     }
 
+    console.log(`[GET /api/projects/:id] Project ${projectId} found with ${project.chapters.length} chapters`);
     res.json(project);
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`[GET /api/projects/:id] Error for project ${req.params.id}:`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
     next(error);
   }
 });
@@ -108,19 +148,19 @@ router.post('/parse-brief', async (req, res, next) => {
 
     console.log(`📄 Extracted ${briefText.length} characters from ${briefFile.name}`);
 
-    // Invoke source-analyst with the actual document content
+    // Invoke content-architect with the actual document content
     const { agentOrchestrator } = require('../services/agentOrchestrator');
 
     const briefParsingPrompt = `
-MODE: CLIENT BRIEF PARSER
+MODE: CLIENT BRIEF INTERPRETATION
 
 ⚠️ DOCUMENT CONTENT PROVIDED BELOW ⚠️
 
-You are analyzing a client brief document. The full text content is provided below.
+You are analyzing a client brief document to understand their training requirements. The full text content is provided below.
 
 Extract project information and return ONLY valid JSON in the specified format.
 
-DOCUMENT CONTENT:
+CLIENT BRIEF DOCUMENT:
 ---
 ${briefText}
 ---
@@ -165,7 +205,7 @@ Return ONLY valid JSON (no preamble, no explanation):
 `;
 
     const result = await agentOrchestrator.invokeAgent(
-      'source-analyst',
+      'content-architect',
       briefParsingPrompt
     );
 

@@ -127,6 +127,7 @@ model Article {
   status      String   // draft, hist_review, fact_check, approved, revision_needed
   histReview  String?  // HIST compliance review feedback
   factCheck   String?  // Fact checker feedback
+  feedback    String?  // User feedback/comments for revisions
 
   approved    Boolean  @default(false)
   approvedAt  DateTime?
@@ -142,6 +143,7 @@ model VideoScript {
 
   content     String
   wordCount   Int
+  feedback    String?  // User feedback/comments for revisions
 
   approved    Boolean  @default(false)
   approvedAt  DateTime?
@@ -156,6 +158,7 @@ model Quiz {
   session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   questions   QuizQuestion[]
+  feedback    String?  // User feedback/comments for revisions
 
   approved    Boolean  @default(false)
   approvedAt  DateTime?

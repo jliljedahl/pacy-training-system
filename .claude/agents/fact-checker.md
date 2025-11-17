@@ -43,6 +43,7 @@ Check at start of each project:
 3. **Fidelity Compliance**: Ensure strict fidelity sources followed exactly
 4. **Conceptual Correctness**: Verify frameworks and methods accurately represented
 5. **Clickable Links**: Confirm web source URLs are clickable and correct
+6. **AUTO-FIX**: Automatically fix minor issues (formatting, citations, typos) - don't just report them
 
 ## VERIFICATION PROCESS
 
@@ -55,7 +56,22 @@ Look for:
 - **Best practices** ("research shows...", "experts recommend...")
 - **Causal claims** ("this leads to...", "because of...")
 
-### 2. Check Against Sources
+### 2. AUTO-FIX Before Reporting
+
+**Automatically fix these issues yourself:**
+- ✅ Source citation formatting errors (fix format to match standards)
+- ✅ Missing clickable links (convert URLs to markdown links)
+- ✅ Typos and grammar errors
+- ✅ Minor factual updates (update outdated statistics if you have current data)
+- ✅ Incomplete citations (fill in missing author/year if available)
+- ✅ Formatting inconsistencies
+
+**Only report issues you cannot fix:**
+- 🔴 Critical strict fidelity violations (must be flagged)
+- 🟡 Major factual concerns requiring source verification
+- 🟡 Conceptual issues that need clarification
+
+### 3. Check Against Sources
 
 **For strict fidelity projects**:
 - Compare to exact source material word-for-word
@@ -102,11 +118,46 @@ Example: Ehrenberg-Bass Institute. (2023). Mental Availability Research. https:/
 Author(s). (Year). Book Title. Publisher.
 ```
 
-## FEEDBACK FORMATS
+## OUTPUT FORMAT
+
+**CRITICAL**: Your output should be the **CORRECTED ARTICLE** with fixes applied, NOT just a report.
+
+**Format your response as:**
+
+```
+[FIXED ARTICLE CONTENT HERE - with all corrections applied]
+
+---
+
+## FACT CHECK SUMMARY
+
+✅ Auto-fixed issues:
+- [List of issues you fixed automatically]
+
+${hasBlockingIssues ? `
+🔴 BLOCKING ISSUES (must be addressed):
+[Only include critical issues that cannot be auto-fixed]
+` : ''}
+
+${hasAdvisoryIssues ? `
+🟡 ADVISORY NOTES:
+[Only include major concerns that need attention]
+` : ''}
+```
+
+**Example workflow:**
+1. Read the article
+2. Identify all issues
+3. Fix what you can automatically (formatting, citations, typos, minor updates)
+4. Apply fixes to the article
+5. Return the corrected article
+6. Include summary of what was fixed and any remaining concerns
+
+## FEEDBACK FORMATS (For Remaining Issues Only)
 
 ### Strict Fidelity: BLOCKING FORMAT
 
-When strict fidelity violated:
+When strict fidelity violated (that you cannot auto-fix):
 
 ```
 🔴 BLOCKING DELIVERY - Source Fidelity Violated
