@@ -27,17 +27,25 @@ router.get('/projects/:projectId/debrief/start', async (req, res, next) => {
     };
 
     try {
-      // Step 1: Execute research
+      // Step 1: Execute initial research
       const researchResult = await debriefWorkflowService.executeResearch(
         projectId,
         sendProgress
       );
 
-      // Step 2: Generate debrief with 3 alternatives
-      const debrief = await debriefWorkflowService.generateDebrief(
+      // Step 1.5: Validate research - check for contradictions, gaps, and contrarian views
+      const { validatedResearch, validation } = await debriefWorkflowService.validateResearch(
         projectId,
         researchResult,
         sendProgress
+      );
+
+      // Step 2: Generate debrief with 3 alternatives (including validation results)
+      const debrief = await debriefWorkflowService.generateDebrief(
+        projectId,
+        validatedResearch,
+        sendProgress,
+        validation
       );
 
       res.write(`data: ${JSON.stringify({ type: 'complete', result: debrief })}\n\n`);

@@ -16,9 +16,30 @@ interface DebriefSource {
   relevance: string;
 }
 
+interface ResearchValidation {
+  contradictions: {
+    area: string;
+    description: string;
+    sources: string[];
+  }[];
+  gaps: {
+    topic: string;
+    importance: string;
+    resolved: boolean;
+  }[];
+  contrarianViews: {
+    viewpoint: string;
+    source?: string;
+    relevance: string;
+  }[];
+  deepenedResearch?: string;
+  validationSummary: string;
+}
+
 interface DebriefData {
   researchSummary: string;
   sources: DebriefSource[] | string[];  // Support both old and new format
+  validation?: ResearchValidation;
   alternatives: Alternative[];
   fullDebrief: string;
 }
@@ -272,6 +293,115 @@ export default function DebriefView() {
               </div>
             )}
           </div>
+
+          {/* Research Validation */}
+          {debrief.validation && (
+            <div className="bg-amber-50 rounded-lg shadow p-6 border border-amber-200">
+              <h2 className="text-xl font-semibold mb-4 text-amber-800">
+                Research-validering
+              </h2>
+              <p className="text-amber-700 mb-4 text-sm">
+                {debrief.validation.validationSummary}
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                {/* Contradictions */}
+                <div className="bg-white rounded-lg p-4 border border-amber-100">
+                  <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                    <span className="text-amber-500">⚡</span>
+                    Motsägelser
+                  </h3>
+                  {debrief.validation.contradictions.length > 0 ? (
+                    <ul className="space-y-2">
+                      {debrief.validation.contradictions.map((c, i) => (
+                        <li key={i} className="text-sm text-gray-600">
+                          <span className="font-medium">{c.area}:</span> {c.description}
+                          {c.sources.length > 0 && (
+                            <span className="text-xs text-gray-400 block mt-1">
+                              Källor: {c.sources.join(', ')}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Inga motsägelser identifierade</p>
+                  )}
+                </div>
+
+                {/* Gaps */}
+                <div className="bg-white rounded-lg p-4 border border-amber-100">
+                  <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                    <span className="text-amber-500">🔍</span>
+                    Kunskapsluckor
+                  </h3>
+                  {debrief.validation.gaps.length > 0 ? (
+                    <ul className="space-y-2">
+                      {debrief.validation.gaps.map((g, i) => (
+                        <li key={i} className="text-sm text-gray-600">
+                          <span className="font-medium">{g.topic}</span>
+                          <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${
+                            g.importance === 'critical'
+                              ? 'bg-red-100 text-red-700'
+                              : g.importance === 'important'
+                              ? 'bg-orange-100 text-orange-700'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {g.importance}
+                          </span>
+                          {g.resolved && (
+                            <span className="text-green-600 ml-2">✓</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Inga kritiska luckor</p>
+                  )}
+                </div>
+
+                {/* Contrarian Views */}
+                <div className="bg-white rounded-lg p-4 border border-amber-100">
+                  <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                    <span className="text-amber-500">💡</span>
+                    Alternativa perspektiv
+                  </h3>
+                  {debrief.validation.contrarianViews.length > 0 ? (
+                    <ul className="space-y-2">
+                      {debrief.validation.contrarianViews.map((v, i) => (
+                        <li key={i} className="text-sm text-gray-600">
+                          <span className="font-medium">{v.viewpoint}</span>
+                          {v.source && (
+                            <span className="text-xs text-gray-400 block">
+                              Källa: {v.source}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-500 block mt-1 italic">
+                            {v.relevance}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Inga alternativa perspektiv identifierade</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Deepened Research */}
+              {debrief.validation.deepenedResearch && (
+                <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h3 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                    <span>🔬</span>
+                    Fördjupad research (automatiskt tillagd)
+                  </h3>
+                  <p className="text-sm text-green-700 whitespace-pre-wrap">
+                    {debrief.validation.deepenedResearch}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Full Debrief */}
           <div className="bg-white rounded-lg shadow p-6">

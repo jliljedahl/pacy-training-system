@@ -8,9 +8,30 @@ export interface DebriefSource {
   relevance: string;
 }
 
+export interface ResearchValidation {
+  contradictions: {
+    area: string;
+    description: string;
+    sources: string[];
+  }[];
+  gaps: {
+    topic: string;
+    importance: string;
+    resolved: boolean;
+  }[];
+  contrarianViews: {
+    viewpoint: string;
+    source?: string;
+    relevance: string;
+  }[];
+  deepenedResearch?: string;
+  validationSummary: string;
+}
+
 export interface DebriefResult {
   researchSummary: string;
   sources: DebriefSource[];
+  validation?: ResearchValidation;
   alternatives: {
     id: string;
     title: string;
@@ -137,8 +158,230 @@ Var konkret och faktabaserad. Undvik generaliseringar.
       },
     });
 
-    onProgress?.('✅ Research klar!');
+    onProgress?.('✅ Initial research klar!');
     return researchResult;
+  }
+
+  /**
+   * Step 1.5: Validate research - check for contradictions, gaps, and contrarian views
+   */
+  async validateResearch(
+    projectId: string,
+    researchResult: string,
+    onProgress?: (message: string) => void
+  ): Promise<{ validatedResearch: string; validation: ResearchValidation }> {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { sourceMaterials: true },
+    });
+
+    if (!project) throw new Error('Project not found');
+
+    onProgress?.('🔍 Validerar research-kvalitet...');
+
+    // Create workflow step for validation
+    const validationStep = await prisma.workflowStep.create({
+      data: {
+        projectId,
+        phase: 'research',
+        step: 'validate_research',
+        agentName: 'content-architect',
+        status: 'running',
+      },
+    });
+
+    const validationPrompt = `
+Du är Content Architect och ska kvalitetssäkra research-resultatet innan vi går vidare.
+
+PROJEKT: ${project.name}
+MÅLGRUPP: ${project.targetAudience || 'Ej specificerat'}
+LÄRANDEMÅL: ${project.learningObjectives || 'Ej specificerat'}
+
+RESEARCH-RESULTAT ATT VALIDERA:
+"""
+${researchResult}
+"""
+
+DIN UPPGIFT:
+Analysera researchen kritiskt genom att svara på dessa tre kontrollfrågor:
+
+1. **MOTSÄGELSER (Contradictions)**
+   - Finns det områden där källorna inte är överens?
+   - Finns det interna motsägelser i materialet?
+   - Om ja: Beskriv varje motsägelse och vilka källor som står i konflikt.
+
+2. **LUCKOR (Gaps)**
+   - Vad saknas för att verkligen förstå ämnet?
+   - Finns det viktiga aspekter som inte täcks av källorna?
+   - Vilken information skulle vara nödvändig för att skapa ett komplett utbildningsprogram?
+   - VIKTIGT: Om du identifierar luckor, markera dem som "resolved: false" så vi kan fördjupa researchen.
+
+3. **ALTERNATIVA PERSPEKTIV (Contrarian Views)**
+   - Finns det kontroversiella eller mindre kända synpunkter som inte täcks?
+   - Finns det alternativa skolor/metoder som utmanar mainstream-synen?
+   - Skulle dessa perspektiv vara värdefulla för målgruppen att känna till?
+
+Svara i följande JSON-format:
+
+{
+  "contradictions": [
+    {
+      "area": "Området där motsägelsen finns",
+      "description": "Beskrivning av motsägelsen",
+      "sources": ["Källa 1", "Källa 2"]
+    }
+  ],
+  "gaps": [
+    {
+      "topic": "Ämnet som saknas",
+      "importance": "Varför detta är viktigt (critical/important/nice-to-have)",
+      "resolved": false
+    }
+  ],
+  "contrarianViews": [
+    {
+      "viewpoint": "Det alternativa perspektivet",
+      "source": "Eventuell källa eller tänkare",
+      "relevance": "Varför detta är relevant för målgruppen"
+    }
+  ],
+  "validationSummary": "Sammanfattning av valideringen (2-3 meningar). Bedöm om researchen är tillräcklig eller behöver fördjupas."
+}
+
+VIKTIGT:
+- Var ärlig och kritisk - det är bättre att hitta luckor nu än senare
+- Om det finns gaps med importance "critical" eller "important", måste vi fördjupa researchen
+- Svara ENDAST med JSON
+`;
+
+    const validationResult = await agentOrchestrator.invokeAgent(
+      'content-architect',
+      validationPrompt,
+      { project, researchResult },
+      onProgress
+    );
+
+    // Parse validation result
+    let validation: ResearchValidation;
+    try {
+      const jsonMatch = validationResult.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        validation = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found');
+      }
+    } catch (e) {
+      validation = {
+        contradictions: [],
+        gaps: [],
+        contrarianViews: [],
+        validationSummary: 'Kunde inte parsa valideringsresultatet.',
+      };
+    }
+
+    // Check if we need to deepen research
+    const criticalGaps = validation.gaps.filter(
+      g => g.importance === 'critical' || g.importance === 'important'
+    );
+    const hasContrarianViewsToExplore = validation.contrarianViews.length > 0;
+
+    let finalResearch = researchResult;
+
+    if (criticalGaps.length > 0 || hasContrarianViewsToExplore) {
+      onProgress?.('🔬 Fördjupar research baserat på identifierade luckor...');
+
+      const deepenPrompt = `
+Du är Research Director och ska fördjupa researchen baserat på identifierade luckor.
+
+URSPRUNGLIG RESEARCH:
+"""
+${researchResult}
+"""
+
+IDENTIFIERADE LUCKOR ATT FYLLA:
+${criticalGaps.map(g => `- ${g.topic}: ${g.importance}`).join('\n')}
+
+ALTERNATIVA PERSPEKTIV ATT UTFORSKA:
+${validation.contrarianViews.map(v => `- ${v.viewpoint}`).join('\n')}
+
+${validation.contradictions.length > 0 ? `
+MOTSÄGELSER ATT KLARGÖRA:
+${validation.contradictions.map(c => `- ${c.area}: ${c.description}`).join('\n')}
+` : ''}
+
+DIN UPPGIFT:
+Komplettera researchen med:
+1. Information som fyller de kritiska luckorna
+2. Beskrivning av alternativa perspektiv och varför de finns
+3. Klarläggande av eventuella motsägelser
+
+Skriv ENDAST den kompletterande informationen (200-400 ord).
+Upprepa inte det som redan finns i ursprunglig research.
+Var specifik och faktabaserad.
+`;
+
+      const deepenedResearch = await agentOrchestrator.invokeAgent(
+        'research-director',
+        deepenPrompt,
+        { project },
+        onProgress
+      );
+
+      validation.deepenedResearch = deepenedResearch;
+
+      // Mark gaps as resolved
+      validation.gaps = validation.gaps.map(g => ({
+        ...g,
+        resolved: true,
+      }));
+
+      // Combine original and deepened research
+      finalResearch = `${researchResult}
+
+---
+
+## Fördjupad Research
+
+${deepenedResearch}`;
+
+      onProgress?.('✅ Research fördjupad!');
+    }
+
+    // Complete workflow step
+    await prisma.workflowStep.update({
+      where: { id: validationStep.id },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+        result: JSON.stringify({
+          validation,
+          deepenedResearch: validation.deepenedResearch,
+        }),
+      },
+    });
+
+    // Also update the original research step with the complete research
+    const researchStep = await prisma.workflowStep.findFirst({
+      where: {
+        projectId,
+        step: 'research',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (researchStep) {
+      await prisma.workflowStep.update({
+        where: { id: researchStep.id },
+        data: { result: finalResearch },
+      });
+    }
+
+    onProgress?.('✅ Research-validering klar!');
+
+    return {
+      validatedResearch: finalResearch,
+      validation,
+    };
   }
 
   /**
@@ -147,7 +390,8 @@ Var konkret och faktabaserad. Undvik generaliseringar.
   async generateDebrief(
     projectId: string,
     researchResult: string,
-    onProgress?: (message: string) => void
+    onProgress?: (message: string) => void,
+    validation?: ResearchValidation
   ): Promise<DebriefResult> {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -183,6 +427,27 @@ BRIEF:
 
 RESEARCH-RESULTAT:
 ${researchResult}
+
+${validation ? `
+RESEARCH-VALIDERING (viktigt att beakta):
+
+${validation.contradictions.length > 0 ? `
+**Identifierade motsägelser i källorna:**
+${validation.contradictions.map(c => `- ${c.area}: ${c.description}`).join('\n')}
+` : 'Inga motsägelser identifierade.'}
+
+${validation.gaps.length > 0 ? `
+**Identifierade kunskapsluckor (${validation.gaps.filter(g => g.resolved).length}/${validation.gaps.length} åtgärdade):**
+${validation.gaps.map(g => `- ${g.topic} (${g.importance})${g.resolved ? ' ✓ åtgärdad' : ''}`).join('\n')}
+` : 'Inga kritiska luckor identifierade.'}
+
+${validation.contrarianViews.length > 0 ? `
+**Alternativa/konträra perspektiv att överväga:**
+${validation.contrarianViews.map(v => `- ${v.viewpoint}${v.source ? ` (${v.source})` : ''}: ${v.relevance}`).join('\n')}
+` : ''}
+
+**Valideringssummering:** ${validation.validationSummary}
+` : ''}
 
 ${project.sourceMaterials.length > 0 ? `
 KÄLLMATERIAL:
@@ -267,6 +532,11 @@ VIKTIGT:
         ],
         fullDebrief: debriefResult,
       };
+    }
+
+    // Include validation results in the debrief
+    if (validation) {
+      parsedDebrief.validation = validation;
     }
 
     // Complete workflow step
