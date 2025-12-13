@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Play, CheckCircle, Download, FileText, Edit2, Save, X, MessageSquare } from 'lucide-react';
+import { Play, Download, FileText, Edit2, Save, X, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { projectsApi, workflowApi, contentApi } from '../services/api';
 import TableOfContents from '../components/TableOfContents';
+import MatrixDebrief from '../components/MatrixDebrief';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +17,7 @@ export default function ProjectDetail() {
   const [editingContent, setEditingContent] = useState<{ type: string; id: string } | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
   const [feedback, setFeedback] = useState<{ [key: string]: string }>({});
-  const [lastCompletedChapter, setLastCompletedChapter] = useState<string | null>(null);
+  const [, setLastCompletedChapter] = useState<string | null>(null);
   const [editingQuiz, setEditingQuiz] = useState<string | null>(null);
   const [editedQuizQuestions, setEditedQuizQuestions] = useState<any[]>([]);
 
@@ -788,72 +789,14 @@ export default function ProjectDetail() {
           {activeTab === 'matrix' && (
             <div>
               {project.programMatrix ? (
-                <div className="space-y-6">
-                  {/* Export buttons */}
-                  <div className="flex gap-3 justify-end border-b pb-4">
-                    <button
-                      onClick={printMatrix}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm"
-                      title="Print or save as PDF"
-                    >
-                      <Download className="w-4 h-4" />
-                      Print/PDF
-                    </button>
-                    <button
-                      onClick={downloadMatrix}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm"
-                      title="Download as markdown file"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Download Matrix
-                    </button>
-                  </div>
-
-                  <div className="prose max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {project.workflowSteps
-                        ?.find((s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design')
-                        ?.result || 'Loading...'}
-                    </ReactMarkdown>
-                  </div>
-
-                  {!project.programMatrix.approved && (
-                    <div className="flex gap-4">
-                      <button
-                        onClick={approveMatrix}
-                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                        Approve Program Matrix
-                      </button>
-                    </div>
-                  )}
-
-                  {project.programMatrix.approved && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <p className="text-green-800 font-medium">
-                          ✓ Program matrix approved! Ready to create articles.
-                        </p>
-                        {project.chapters && project.chapters.length > 0 && (
-                          <button
-                            onClick={() => setActiveTab('content')}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                          >
-                            Go to Content Tab →
-                          </button>
-                        )}
-                      </div>
-                      {(!project.chapters || project.chapters.length === 0) && (
-                        <p className="text-orange-600 text-sm mt-2">
-                          ⚠️ No chapters/sessions found. The matrix may need to be regenerated with the new format.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <MatrixDebrief
+                  project={project}
+                  onApprove={approveMatrix}
+                  onPrint={printMatrix}
+                  onDownload={downloadMatrix}
+                />
               ) : (
-                <p className="text-gray-500">Program matrix not created yet</p>
+                <p className="text-gray-500">Programmatrisen har inte skapats an.</p>
               )}
             </div>
           )}

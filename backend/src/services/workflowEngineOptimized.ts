@@ -1175,28 +1175,28 @@ Requirements:
     let currentChapter: { num: number; name: string; theme: string } | null = null;
 
     for (const line of lines) {
-      // Try to match chapter row: | **Kapitel N: Name**<br><br>*Tema: ...* | ...
-      const chapterMatch = line.match(/\|\s*\*\*Kapitel\s+(\d+):\s*([^*<]+)(?:<br><br>\*Tema:\s*([^*]+)\*)?/i);
-      
+      // Try to match chapter row: | **Kapitel/Chapter N: Name**<br><br>*Tema/Theme: ...* | ...
+      const chapterMatch = line.match(/\|\s*\*\*(?:Kapitel|Chapter)\s+(\d+):\s*([^*<]+)(?:<br><br>\*(?:Tema|Theme):\s*([^*]+)\*)?/i);
+
       if (chapterMatch) {
         const chapterNum = parseInt(chapterMatch[1]);
         const chapterName = chapterMatch[2].trim();
         const theme = chapterMatch[3] ? chapterMatch[3].trim() : '';
-        
+
         currentChapter = { num: chapterNum, name: chapterName, theme };
 
-      if (!chaptersMap.has(chapterNum)) {
-        chaptersMap.set(chapterNum, {
-          name: chapterName,
-          theme,
-          sessions: [],
-        });
-      }
+        if (!chaptersMap.has(chapterNum)) {
+          chaptersMap.set(chapterNum, {
+            name: chapterName,
+            theme,
+            sessions: [],
+          });
+        }
       }
 
       // Try to match session row: | **Session N.M: Name**<br><br>Description | ... | ... |
       // Also handle empty chapter cell: |  | **Session N.M: Name** | ... |
-      const sessionMatch = line.match(/\|\s*(?:\*\*Kapitel[^|]*\*\*[^|]*\||[^|]*)\|\s*\*\*Session\s+([\d.]+):\s*([^*<]+)(?:<br><br>([^|]*))?/i);
+      const sessionMatch = line.match(/\|\s*(?:\*\*(?:Kapitel|Chapter)[^|]*\*\*[^|]*\||[^|]*)\|\s*\*\*Session\s+([\d.]+):\s*([^*<]+)(?:<br><br>([^|]*))?/i);
       
       if (sessionMatch && currentChapter) {
         const sessionNum = sessionMatch[1].trim();

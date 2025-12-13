@@ -1,18 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, Edit3 } from 'lucide-react';
+import { Upload, FileText, Building2, Sparkles, ArrowLeft, Check } from 'lucide-react';
 import { projectsApi, BriefExtractionResult } from '../services/api';
+
+interface CompanyContext {
+  company: {
+    name: string;
+    industry: string;
+    description: string;
+  };
+  brandVoice: {
+    tone: string;
+    keyThemes: string[];
+  };
+  audience: {
+    type: string;
+  };
+}
 
 export default function CreateProject() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-
-  // Brief upload mode
-  const [mode, setMode] = useState<'manual' | 'upload'>('manual');
-  const [briefFile, setBriefFile] = useState<File | null>(null);
-  const [extractedData, setExtractedData] = useState<BriefExtractionResult | null>(null);
-  const [parsing, setParsing] = useState(false);
+  const [extractedData] = useState<BriefExtractionResult | null>(null);
+  const [companyContext, setCompanyContext] = useState<CompanyContext | null>(null);
+  const [briefSource, setBriefSource] = useState<'interview' | 'upload' | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -27,13 +39,65 @@ export default function CreateProject() {
     quizQuestions: 3,
   });
 
+  // Check for interview brief data and company context on mount
+  useEffect(() => {
+    // Get company context
+    const companyContextStr = sessionStorage.getItem('companyContext');
+    if (companyContextStr) {
+      try {
+        setCompanyContext(JSON.parse(companyContextStr));
+      } catch (e) {
+        console.error('Failed to parse company context:', e);
+      }
+    }
+
+    // Get interview brief
+    const interviewBriefStr = sessionStorage.getItem('interviewBrief');
+    if (interviewBriefStr) {
+      try {
+        const interviewData = JSON.parse(interviewBriefStr);
+        const brief = interviewData.brief;
+
+        setFormData({
+          name: brief.projectName || '',
+          language: brief.language || 'swedish',
+          learningObjectives: brief.learningObjectives || '',
+          targetAudience: brief.targetAudience || '',
+          desiredOutcomes: brief.desiredOutcomes || '',
+          constraints: brief.constraints || '',
+          particularAngle: brief.particularAngle || '',
+          deliverables: brief.deliverables || 'articles',
+          strictFidelity: brief.strictFidelity || false,
+          quizQuestions: 3,
+        });
+
+        setBriefSource(interviewData.source || 'interview');
+        // Clear the session storage
+        sessionStorage.removeItem('interviewBrief');
+      } catch (e) {
+        console.error('Failed to parse interview brief:', e);
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Create project
-      const response = await projectsApi.create(formData);
+      // Include company context in project data
+      const projectData = {
+        ...formData,
+        companyContext: companyContext ? {
+          name: companyContext.company.name,
+          industry: companyContext.company.industry,
+          description: companyContext.company.description,
+          tone: companyContext.brandVoice.tone,
+          audienceType: companyContext.audience.type,
+        } : undefined,
+      };
+
+      const response = await projectsApi.create(projectData);
       const projectId = response.data.id;
 
       // Upload files if any
@@ -41,11 +105,14 @@ export default function CreateProject() {
         await projectsApi.uploadSource(projectId, file, formData.strictFidelity ? 'strict_fidelity' : 'context');
       }
 
+      // Clear company context after project creation
+      sessionStorage.removeItem('companyContext');
+
       navigate(`/projects/${projectId}`);
     } catch (error: any) {
       console.error('Failed to create project:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Failed to create project. Make sure the backend server is running.';
-      alert(`Failed to create project:\n\n${errorMessage}\n\nCheck the browser console (F12) for more details.`);
+      alert(`Kunde inte skapa projekt:\n\n${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -57,379 +124,285 @@ export default function CreateProject() {
     }
   };
 
-  const handleBriefUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-
-    const file = e.target.files[0];
-    setBriefFile(file);
-    setParsing(true);
-
-    try {
-      const response = await projectsApi.parseBrief(file);
-      setExtractedData(response.data);
-
-      // Pre-fill form data with extracted information
-      const extracted = response.data.extracted;
-      setFormData({
-        name: extracted.projectName !== '[NEEDS INPUT]' ? extracted.projectName : '',
-        language: extracted.language !== '[NEEDS INPUT]' ? extracted.language : 'swedish',
-        learningObjectives: extracted.learningObjectives !== '[NEEDS INPUT]' ? extracted.learningObjectives : '',
-        targetAudience: extracted.targetAudience !== '[NEEDS INPUT]' ? extracted.targetAudience : '',
-        desiredOutcomes: extracted.desiredOutcomes !== '[NEEDS INPUT]' ? extracted.desiredOutcomes : '',
-        constraints: extracted.constraints || '',
-        particularAngle: extracted.particularAngle || '',
-        deliverables: extracted.deliverables !== '[NEEDS INPUT]' ? extracted.deliverables : 'articles',
-        strictFidelity: extracted.strictFidelity,
-        quizQuestions: 3,
-      });
-    } catch (error) {
-      console.error('Failed to parse brief:', error);
-      alert('Failed to parse brief document. Please try again or fill the form manually.');
-    } finally {
-      setParsing(false);
-    }
-  };
-
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-12">
-        <h1 className="text-5xl font-semibold text-[#1d1d1f] mb-3 tracking-tight">Create New Training Program</h1>
-        <p className="text-[#86868b] text-lg">Start building your AI-powered training content</p>
+    <div className="max-w-3xl mx-auto py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <button
+          onClick={() => navigate('/onboarding')}
+          className="flex items-center gap-2 text-[#86868b] hover:text-[#1d1d1f] transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Tillbaka till start
+        </button>
+        <h1 className="text-3xl font-semibold text-[#1d1d1f] mb-2">
+          Granska och skapa projekt
+        </h1>
+        <p className="text-[#86868b]">
+          Kontrollera informationen nedan och justera vid behov.
+        </p>
       </div>
 
-      {/* Mode Toggle - Premium Design */}
-      <div className="mb-10 flex gap-3 bg-white rounded-2xl p-2 subtle-shadow border border-gray-100/50">
-        <button
-          type="button"
-          onClick={() => setMode('manual')}
-          className={`flex-1 py-3 px-6 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
-            mode === 'manual'
-              ? 'bg-[#007AFF] text-white shadow-sm'
-              : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
-          }`}
-        >
-          <Edit3 className="w-4 h-4" />
-          Fill Form Manually
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('upload')}
-          className={`flex-1 py-3 px-6 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
-            mode === 'upload'
-              ? 'bg-[#007AFF] text-white shadow-sm'
-              : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          Upload Client Brief
-        </button>
-      </div>
-
-      {/* Brief Upload Section - Premium Design */}
-      {mode === 'upload' && !extractedData && (
-        <div className="mb-10 bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 hover:border-[#007AFF]/30 transition-colors">
-          <input
-            type="file"
-            accept=".pdf,.docx,.doc,.txt"
-            onChange={handleBriefUpload}
-            className="hidden"
-            id="brief-upload"
-            disabled={parsing}
-          />
-          <label htmlFor="brief-upload" className="cursor-pointer flex flex-col items-center">
-            <div className="w-20 h-20 rounded-full bg-[#f5f5f7] flex items-center justify-center mb-6">
-              <FileText className="w-10 h-10 text-[#007AFF]" />
-            </div>
-            <span className="text-xl font-semibold text-[#1d1d1f] mb-2">
-              Upload Client Brief Document
-            </span>
-            <span className="text-[#86868b] text-sm mb-6">
-              PDF, DOCX, or TXT file containing project information
-            </span>
-            {parsing && (
-              <div className="flex items-center gap-3 text-[#007AFF]">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#007AFF] border-t-transparent"></div>
-                <span className="text-sm font-medium">Analyzing brief document...</span>
+      {/* Brief Summary Card */}
+      {(briefSource || companyContext) && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-8 overflow-hidden">
+          {/* Company Context Section */}
+          {companyContext && (
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <Building2 className="w-6 h-6 text-[#007AFF]" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-[#1d1d1f] mb-1">
+                    {companyContext.company.name}
+                  </h3>
+                  <p className="text-sm text-[#86868b] mb-3">
+                    {companyContext.company.industry}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-white rounded-lg text-xs text-[#1d1d1f]">
+                      {companyContext.brandVoice.tone}
+                    </span>
+                    <span className="px-2 py-1 bg-white rounded-lg text-xs text-[#1d1d1f]">
+                      {companyContext.audience.type}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-          </label>
+            </div>
+          )}
+
+          {/* Brief Source Badge */}
+          {briefSource && (
+            <div className="px-6 py-4 flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                {briefSource === 'interview' ? (
+                  <Sparkles className="w-4 h-4 text-green-600" />
+                ) : (
+                  <FileText className="w-4 h-4 text-green-600" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1d1d1f]">
+                  {briefSource === 'interview' ? 'Brief skapad via intervju' : 'Brief extraherad från dokument'}
+                </p>
+                <p className="text-xs text-[#86868b]">
+                  Granska informationen och justera vid behov
+                </p>
+              </div>
+              <Check className="w-5 h-5 text-green-500 ml-auto" />
+            </div>
+          )}
         </div>
       )}
 
-      {/* Extraction Preview */}
-      {mode === 'upload' && extractedData && (
-        <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Brief Extracted Successfully</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Review and edit the extracted information below before creating the project
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setExtractedData(null);
-                setBriefFile(null);
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Upload Different Brief
-            </button>
+      {/* Extraction Notes */}
+      {extractedData && extractedData.needsHumanInput.length > 0 && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+          <p className="text-sm font-medium text-yellow-800 mb-2">
+            Följande fält behöver granskas:
+          </p>
+          <ul className="text-sm text-yellow-700 space-y-1">
+            {extractedData.needsHumanInput.map((field, idx) => (
+              <li key={idx} className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
+                {field}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+        <div className="space-y-6">
+          {/* Project Name */}
+          <div>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+              Projektnamn *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa] text-[#1d1d1f] transition-all"
+              placeholder="t.ex. Grunderna i varumärkesbyggande"
+            />
           </div>
 
-          {/* Show confidence levels and notes */}
-          {extractedData.needsHumanInput.length > 0 && (
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-              <p className="text-sm font-medium text-yellow-800 mb-2">
-                ⚠️ Some fields need your input:
-              </p>
-              <ul className="text-sm text-yellow-700 list-disc list-inside">
-                {extractedData.needsHumanInput.map((field, idx) => (
-                  <li key={idx}>{field}</li>
-                ))}
-              </ul>
+          {/* Two columns */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Language */}
+            <div>
+              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+                Språk
+              </label>
+              <select
+                value={formData.language}
+                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa]"
+              >
+                <option value="swedish">Svenska</option>
+                <option value="english">Engelska</option>
+              </select>
             </div>
-          )}
 
-          {extractedData.notes.length > 0 && (
-            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded">
-              <p className="text-sm font-medium text-gray-800 mb-2">📝 Notes:</p>
-              <ul className="text-sm text-gray-700 list-disc list-inside">
-                {extractedData.notes.map((note, idx) => (
-                  <li key={idx}>{note}</li>
-                ))}
-              </ul>
+            {/* Deliverables */}
+            <div>
+              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+                Leverabler
+              </label>
+              <select
+                value={formData.deliverables}
+                onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa]"
+              >
+                <option value="articles">Endast artiklar</option>
+                <option value="articles_videos">Artiklar + Videomanus</option>
+                <option value="articles_videos_quizzes">Artiklar + Video + Quiz</option>
+                <option value="full_program">Komplett program</option>
+              </select>
             </div>
-          )}
-        </div>
-      )}
+          </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-2xl p-10 subtle-shadow border border-gray-100/50">
-        {/* Project Name */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1d1d1f] mb-3 flex items-center gap-2">
-            Project Name *
-            {extractedData && (
-              <span
-                className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
-                  extractedData.confidence.projectName === 'high'
-                    ? 'bg-[#e8f5e9] text-[#34c759] border border-[#34c759]/20'
-                    : extractedData.confidence.projectName === 'medium'
-                    ? 'bg-[#fff4e6] text-[#ff9500] border border-[#ff9500]/20'
-                    : 'bg-[#ffe5e5] text-[#ff3b30] border border-[#ff3b30]/20'
-                }`}
-              >
-                {extractedData.confidence.projectName} confidence
-              </span>
-            )}
-          </label>
-          <input
-            type="text"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa] text-[#1d1d1f] placeholder:text-[#86868b] transition-all"
-            placeholder="e.g., Brand Building Fundamentals"
-          />
-        </div>
-
-        {/* Language */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-          <select
-            value={formData.language}
-            onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="swedish">Swedish</option>
-            <option value="english">English</option>
-          </select>
-        </div>
-
-        {/* Learning Objectives */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            Learning Objectives
-            {extractedData && (
-              <span
-                className={`text-xs px-2 py-0.5 rounded ${
-                  extractedData.confidence.learningObjectives === 'high'
-                    ? 'bg-green-100 text-green-800'
-                    : extractedData.confidence.learningObjectives === 'medium'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {extractedData.confidence.learningObjectives} confidence
-              </span>
-            )}
-          </label>
-          <textarea
-            value={formData.learningObjectives}
-            onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
-            rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="What should learners be able to do after completing this program?"
-          />
-        </div>
-
-        {/* Target Audience */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            Target Audience
-            {extractedData && (
-              <span
-                className={`text-xs px-2 py-0.5 rounded ${
-                  extractedData.confidence.targetAudience === 'high'
-                    ? 'bg-green-100 text-green-800'
-                    : extractedData.confidence.targetAudience === 'medium'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {extractedData.confidence.targetAudience} confidence
-              </span>
-            )}
-          </label>
-          <textarea
-            value={formData.targetAudience}
-            onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-            rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Who is this training for? Their roles, experience level, context..."
-          />
-        </div>
-
-        {/* Desired Outcomes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Desired Outcomes
-          </label>
-          <textarea
-            value={formData.desiredOutcomes}
-            onChange={(e) => setFormData({ ...formData, desiredOutcomes: e.target.value })}
-            rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="What behavior changes or skills should result from this training?"
-          />
-        </div>
-
-        {/* Particular Angle */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Particular Angle or Framework
-          </label>
-          <input
-            type="text"
-            value={formData.particularAngle}
-            onChange={(e) => setFormData({ ...formData, particularAngle: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="e.g., Ehrenberg-Bass principles, Design Thinking, Agile methodology"
-          />
-        </div>
-
-        {/* Deliverables */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Deliverables</label>
-          <select
-            value={formData.deliverables}
-            onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="articles">Articles only</option>
-            <option value="articles_videos">Articles + Video scripts</option>
-            <option value="articles_videos_quizzes">Articles + Videos + Quizzes</option>
-            <option value="full_program">Full program (all deliverables)</option>
-          </select>
-        </div>
-
-        {/* Strict Fidelity */}
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="strictFidelity"
-            checked={formData.strictFidelity}
-            onChange={(e) => setFormData({ ...formData, strictFidelity: e.target.checked })}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-          />
-          <label htmlFor="strictFidelity" className="ml-2 text-sm text-gray-700">
-            Strict fidelity to source materials (content must match sources exactly)
-          </label>
-        </div>
-
-        {/* Quiz Questions */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Quiz Questions per Session
-          </label>
-          <input
-            type="number"
-            min="1"
-            max="10"
-            value={formData.quizQuestions}
-            onChange={(e) => setFormData({ ...formData, quizQuestions: parseInt(e.target.value) })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* Source Materials */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Source Materials (optional)
-          </label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-              id="file-upload"
-            />
-            <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
-              <Upload className="w-12 h-12 text-gray-400" />
-              <span className="mt-2 text-sm text-gray-600">
-                Click to upload or drag and drop
-              </span>
-              <span className="text-xs text-gray-500">PDF, DOCX, TXT, etc.</span>
+          {/* Learning Objectives */}
+          <div>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+              Lärandemål
             </label>
-            {files.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700">Selected files:</p>
-                <ul className="mt-2 space-y-1">
-                  {files.map((file, idx) => (
-                    <li key={idx} className="text-sm text-gray-600">
-                      {file.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <textarea
+              value={formData.learningObjectives}
+              onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa] resize-none"
+              placeholder="Vad ska deltagarna kunna göra efter utbildningen?"
+            />
+          </div>
+
+          {/* Target Audience */}
+          <div>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+              Målgrupp
+            </label>
+            <textarea
+              value={formData.targetAudience}
+              onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+              rows={2}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa] resize-none"
+              placeholder="Vem är utbildningen för? Roller, erfarenhetsnivå..."
+            />
+          </div>
+
+          {/* Desired Outcomes */}
+          <div>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+              Önskade resultat
+            </label>
+            <textarea
+              value={formData.desiredOutcomes}
+              onChange={(e) => setFormData({ ...formData, desiredOutcomes: e.target.value })}
+              rows={2}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa] resize-none"
+              placeholder="Vilka beteendeförändringar vill ni se?"
+            />
+          </div>
+
+          {/* Particular Angle */}
+          <div>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+              Specifikt ramverk eller perspektiv
+            </label>
+            <input
+              type="text"
+              value={formData.particularAngle}
+              onChange={(e) => setFormData({ ...formData, particularAngle: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] bg-[#fafafa]"
+              placeholder="t.ex. Ehrenberg-Bass, Design Thinking"
+            />
+          </div>
+
+          {/* Strict Fidelity Toggle */}
+          <div className="flex items-center gap-3 p-4 bg-[#f5f5f7] rounded-xl">
+            <input
+              type="checkbox"
+              id="strictFidelity"
+              checked={formData.strictFidelity}
+              onChange={(e) => setFormData({ ...formData, strictFidelity: e.target.checked })}
+              className="w-5 h-5 text-[#007AFF] border-gray-300 rounded focus:ring-[#007AFF]"
+            />
+            <label htmlFor="strictFidelity" className="text-sm text-[#1d1d1f]">
+              <span className="font-medium">Strikt källtrohet</span>
+              <span className="text-[#86868b] block text-xs">
+                Innehållet måste exakt följa de uppladdade källorna
+              </span>
+            </label>
+          </div>
+
+          {/* Source Materials Upload */}
+          <div>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
+              Källmaterial (valfritt)
+            </label>
+            <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 hover:border-[#007AFF]/30 transition-colors">
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+                id="file-upload"
+              />
+              <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                <div className="w-12 h-12 bg-[#f5f5f7] rounded-xl flex items-center justify-center mb-3">
+                  <Upload className="w-6 h-6 text-[#86868b]" />
+                </div>
+                <span className="text-sm text-[#1d1d1f] font-medium">
+                  Klicka för att ladda upp
+                </span>
+                <span className="text-xs text-[#86868b]">
+                  PDF, DOCX, TXT
+                </span>
+              </label>
+              {files.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs font-medium text-[#86868b] mb-2">Valda filer:</p>
+                  <div className="space-y-2">
+                    {files.map((file, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm text-[#1d1d1f]">
+                        <FileText className="w-4 h-4 text-[#007AFF]" />
+                        {file.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Submit */}
-        <div className="flex gap-4 pt-6 border-t border-gray-100">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 premium-button text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Creating...
-              </span>
-            ) : (
-              'Create Project'
-            )}
-          </button>
+        <div className="flex gap-3 mt-8 pt-6 border-t border-gray-100">
           <button
             type="button"
-            onClick={() => navigate('/')}
-            className="px-6 py-3 border border-gray-200 text-[#1d1d1f] rounded-xl hover:bg-[#f5f5f7] transition-colors font-medium text-sm"
+            onClick={() => navigate('/onboarding')}
+            className="px-5 py-3 border border-gray-200 rounded-xl font-medium text-[#1d1d1f] hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            Avbryt
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !formData.name}
+            className="flex-1 px-5 py-3 bg-[#007AFF] text-white rounded-xl font-medium hover:bg-[#0066d6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                Skapar projekt...
+              </>
+            ) : (
+              'Skapa projekt'
+            )}
           </button>
         </div>
       </form>

@@ -7,10 +7,32 @@ import path from 'path';
 // Load environment variables
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['ANTHROPIC_API_KEY'];
+const optionalEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'SUPABASE_ANON_KEY'];
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`❌ Missing required environment variable: ${envVar}`);
+    process.exit(1);
+  }
+}
+
+// Warn about missing optional vars (Supabase)
+const missingOptional = optionalEnvVars.filter(v => !process.env[v]);
+if (missingOptional.length > 0) {
+  console.warn(`⚠️  Missing Supabase config (auth disabled): ${missingOptional.join(', ')}`);
+  console.warn('   Set these in .env to enable authentication');
+}
+
 // Import routes
 import projectRoutes from './api/projects';
 import workflowRoutes from './api/workflow';
 import contentRoutes from './api/content';
+import onboardingRoutes from './api/onboarding';
+import interviewRoutes from './api/interview';
+import debriefRoutes from './api/debrief';
+import { authMiddleware, optionalAuthMiddleware } from './middleware/auth';
 
 const app = express();
 
@@ -26,10 +48,26 @@ app.use(fileUpload({
 const uploadDir = path.resolve(process.env.UPLOAD_DIR || '../uploads');
 app.use('/uploads', express.static(uploadDir));
 
-// API Routes
-app.use('/api/projects', projectRoutes);
-app.use('/api/workflow', workflowRoutes);
-app.use('/api/content', contentRoutes);
+// Check if Supabase is configured
+const supabaseConfigured = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY;
+
+// API Routes - protected with auth if Supabase is configured
+if (supabaseConfigured) {
+  app.use('/api/projects', authMiddleware, projectRoutes);
+  app.use('/api/workflow', authMiddleware, workflowRoutes);
+  app.use('/api/content', authMiddleware, contentRoutes);
+  app.use('/api/onboarding', authMiddleware, onboardingRoutes);
+  app.use('/api/interview', authMiddleware, interviewRoutes);
+  app.use('/api/debrief', authMiddleware, debriefRoutes);
+} else {
+  // Development mode without auth
+  app.use('/api/projects', projectRoutes);
+  app.use('/api/workflow', workflowRoutes);
+  app.use('/api/content', contentRoutes);
+  app.use('/api/onboarding', onboardingRoutes);
+  app.use('/api/interview', interviewRoutes);
+  app.use('/api/debrief', debriefRoutes);
+}
 
 // Health check
 app.get('/health', (req, res) => {

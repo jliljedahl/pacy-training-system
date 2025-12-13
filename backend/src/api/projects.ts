@@ -9,15 +9,19 @@ const pdfParse = require('pdf-parse');
 
 const router = Router();
 
-// Get all projects
+// Get all projects (filtered by user if authenticated)
 router.get('/', async (req, res, next) => {
   try {
-    console.log('[GET /api/projects] Fetching all projects...');
-    
+    console.log('[GET /api/projects] Fetching projects...');
+
     // First, check database connection
     await prisma.$connect();
-    
+
+    // Filter by user if authenticated
+    const whereClause = req.user ? { userId: req.user.id } : {};
+
     const projects = await prisma.project.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
         sourceMaterials: true,
@@ -41,7 +45,7 @@ router.get('/', async (req, res, next) => {
         },
       },
     });
-    console.log(`[GET /api/projects] Found ${projects.length} projects`);
+    console.log(`[GET /api/projects] Found ${projects.length} projects for user ${req.user?.id || 'anonymous'}`);
     res.json(projects);
   } catch (error: any) {
     console.error('[GET /api/projects] Error:', {
@@ -234,6 +238,11 @@ Return ONLY valid JSON (no preamble, no explanation):
 // Create new project
 router.post('/', async (req, res, next) => {
   try {
+    // Require authentication for creating projects
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required to create projects' });
+    }
+
     const {
       name,
       learningObjectives,
@@ -246,10 +255,14 @@ router.post('/', async (req, res, next) => {
       strictFidelity,
       quizQuestions,
       language,
+      companyName,
+      companyUrl,
+      companyContext,
     } = req.body;
 
     const project = await prisma.project.create({
       data: {
+        userId: req.user.id,
         name,
         status: 'information_gathering',
         language: language || 'swedish',
@@ -262,6 +275,9 @@ router.post('/', async (req, res, next) => {
         numChapters,
         strictFidelity: strictFidelity || false,
         quizQuestions: quizQuestions || 3,
+        companyName,
+        companyUrl,
+        companyContext,
       },
     });
 

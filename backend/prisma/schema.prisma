@@ -3,14 +3,34 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User model - synced with Supabase Auth
+model User {
+  id        String   @id // Matches Supabase Auth user ID
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User's projects
+  projects  Project[]
+
+  @@map("users")
 }
 
 model Project {
   id          String   @id @default(uuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // Owner
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Project metadata
   name        String
@@ -22,6 +42,11 @@ model Project {
   targetAudience     String?
   desiredOutcomes    String?
   constraints        String?
+
+  // Company context (from onboarding)
+  companyName    String?
+  companyUrl     String?
+  companyContext String?  // JSON from company-researcher agent
 
   // Configuration
   particularAngle    String?
@@ -36,7 +61,9 @@ model Project {
   chapters           Chapter[]
   workflowSteps      WorkflowStep[]
 
+  @@index([userId])
   @@index([status])
+  @@map("projects")
 }
 
 model SourceMaterial {
@@ -47,12 +74,13 @@ model SourceMaterial {
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   filename   String
-  filepath   String
+  filepath   String   // Supabase Storage path
   mimetype   String
   size       Int
   type       String   // strict_fidelity or context
 
   @@index([projectId])
+  @@map("source_materials")
 }
 
 model ProgramMatrix {
@@ -70,6 +98,8 @@ model ProgramMatrix {
 
   approved   Boolean  @default(false)
   approvedAt DateTime?
+
+  @@map("program_matrices")
 }
 
 model Chapter {
@@ -89,6 +119,7 @@ model Chapter {
 
   @@index([projectId])
   @@unique([projectId, number])
+  @@map("chapters")
 }
 
 model Session {
@@ -110,6 +141,7 @@ model Session {
 
   @@index([chapterId])
   @@unique([chapterId, number])
+  @@map("sessions")
 }
 
 model Article {
@@ -131,6 +163,8 @@ model Article {
 
   approved    Boolean  @default(false)
   approvedAt  DateTime?
+
+  @@map("articles")
 }
 
 model VideoScript {
@@ -147,6 +181,8 @@ model VideoScript {
 
   approved    Boolean  @default(false)
   approvedAt  DateTime?
+
+  @@map("video_scripts")
 }
 
 model Quiz {
@@ -162,6 +198,8 @@ model Quiz {
 
   approved    Boolean  @default(false)
   approvedAt  DateTime?
+
+  @@map("quizzes")
 }
 
 model QuizQuestion {
@@ -177,6 +215,7 @@ model QuizQuestion {
   correctAnswer String // a, b, or c
 
   @@index([quizId])
+  @@map("quiz_questions")
 }
 
 model WorkflowStep {
@@ -195,4 +234,5 @@ model WorkflowStep {
   error       String?
 
   @@index([projectId, status])
+  @@map("workflow_steps")
 }

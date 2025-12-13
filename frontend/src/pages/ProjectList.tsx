@@ -103,10 +103,10 @@ export default function ProjectList() {
           Create your first training program to get started with AI-powered content creation.
         </p>
         <Link
-          to="/projects/new"
+          to="/onboarding"
           className="premium-button text-white inline-flex items-center"
         >
-          Create New Project
+          Skapa nytt projekt
         </Link>
       </div>
     );
