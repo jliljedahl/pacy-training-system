@@ -88,13 +88,15 @@ export default function CreateProject() {
       // Include company context in project data
       const projectData = {
         ...formData,
-        companyContext: companyContext ? {
-          name: companyContext.company.name,
-          industry: companyContext.company.industry,
-          description: companyContext.company.description,
-          tone: companyContext.brandVoice.tone,
-          audienceType: companyContext.audience.type,
-        } : undefined,
+        companyContext: companyContext
+          ? {
+              name: companyContext.company.name,
+              industry: companyContext.company.industry,
+              description: companyContext.company.description,
+              tone: companyContext.brandVoice.tone,
+              audienceType: companyContext.audience.type,
+            }
+          : undefined,
       };
 
       const response = await projectsApi.create(projectData);
@@ -102,7 +104,11 @@ export default function CreateProject() {
 
       // Upload files if any
       for (const file of files) {
-        await projectsApi.uploadSource(projectId, file, formData.strictFidelity ? 'strict_fidelity' : 'context');
+        await projectsApi.uploadSource(
+          projectId,
+          file,
+          formData.strictFidelity ? 'strict_fidelity' : 'context'
+        );
       }
 
       // Clear company context after project creation
@@ -111,7 +117,10 @@ export default function CreateProject() {
       navigate(`/projects/${projectId}`);
     } catch (error: any) {
       console.error('Failed to create project:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to create project. Make sure the backend server is running.';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to create project. Make sure the backend server is running.';
       alert(`Kunde inte skapa projekt:\n\n${errorMessage}`);
     } finally {
       setLoading(false);
@@ -135,12 +144,8 @@ export default function CreateProject() {
           <ArrowLeft className="w-4 h-4" />
           Tillbaka till start
         </button>
-        <h1 className="text-3xl font-semibold text-[#1d1d1f] mb-2">
-          Granska och skapa projekt
-        </h1>
-        <p className="text-[#86868b]">
-          Kontrollera informationen nedan och justera vid behov.
-        </p>
+        <h1 className="text-3xl font-semibold text-[#1d1d1f] mb-2">Granska och skapa projekt</h1>
+        <p className="text-[#86868b]">Kontrollera informationen nedan och justera vid behov.</p>
       </div>
 
       {/* Brief Summary Card */}
@@ -157,9 +162,7 @@ export default function CreateProject() {
                   <h3 className="font-semibold text-[#1d1d1f] mb-1">
                     {companyContext.company.name}
                   </h3>
-                  <p className="text-sm text-[#86868b] mb-3">
-                    {companyContext.company.industry}
-                  </p>
+                  <p className="text-sm text-[#86868b] mb-3">{companyContext.company.industry}</p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-2 py-1 bg-white rounded-lg text-xs text-[#1d1d1f]">
                       {companyContext.brandVoice.tone}
@@ -185,7 +188,9 @@ export default function CreateProject() {
               </div>
               <div>
                 <p className="text-sm font-medium text-[#1d1d1f]">
-                  {briefSource === 'interview' ? 'Brief skapad via intervju' : 'Brief extraherad från dokument'}
+                  {briefSource === 'interview'
+                    ? 'Brief skapad via intervju'
+                    : 'Brief extraherad från dokument'}
                 </p>
                 <p className="text-xs text-[#86868b]">
                   Granska informationen och justera vid behov
@@ -215,13 +220,14 @@ export default function CreateProject() {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100"
+      >
         <div className="space-y-6">
           {/* Project Name */}
           <div>
-            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-              Projektnamn *
-            </label>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Projektnamn *</label>
             <input
               type="text"
               required
@@ -236,9 +242,7 @@ export default function CreateProject() {
           <div className="grid grid-cols-2 gap-4">
             {/* Language */}
             <div>
-              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-                Språk
-              </label>
+              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Språk</label>
               <select
                 value={formData.language}
                 onChange={(e) => setFormData({ ...formData, language: e.target.value })}
@@ -251,9 +255,7 @@ export default function CreateProject() {
 
             {/* Deliverables */}
             <div>
-              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-                Leverabler
-              </label>
+              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Leverabler</label>
               <select
                 value={formData.deliverables}
                 onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
@@ -269,9 +271,7 @@ export default function CreateProject() {
 
           {/* Learning Objectives */}
           <div>
-            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-              Lärandemål
-            </label>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Lärandemål</label>
             <textarea
               value={formData.learningObjectives}
               onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
@@ -283,9 +283,7 @@ export default function CreateProject() {
 
           {/* Target Audience */}
           <div>
-            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-              Målgrupp
-            </label>
+            <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Målgrupp</label>
             <textarea
               value={formData.targetAudience}
               onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
@@ -357,12 +355,8 @@ export default function CreateProject() {
                 <div className="w-12 h-12 bg-[#f5f5f7] rounded-xl flex items-center justify-center mb-3">
                   <Upload className="w-6 h-6 text-[#86868b]" />
                 </div>
-                <span className="text-sm text-[#1d1d1f] font-medium">
-                  Klicka för att ladda upp
-                </span>
-                <span className="text-xs text-[#86868b]">
-                  PDF, DOCX, TXT
-                </span>
+                <span className="text-sm text-[#1d1d1f] font-medium">Klicka för att ladda upp</span>
+                <span className="text-xs text-[#86868b]">PDF, DOCX, TXT</span>
               </label>
               {files.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-100">

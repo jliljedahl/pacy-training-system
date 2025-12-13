@@ -38,7 +38,7 @@ interface ResearchValidation {
 
 interface DebriefData {
   researchSummary: string;
-  sources: DebriefSource[] | string[];  // Support both old and new format
+  sources: DebriefSource[] | string[]; // Support both old and new format
   validation?: ResearchValidation;
   alternatives: Alternative[];
   fullDebrief: string;
@@ -75,7 +75,9 @@ export default function DebriefView() {
             setDebrief(debriefRes.data);
             setPhase('review');
             // Pre-select recommended alternative
-            const recommended = debriefRes.data.alternatives?.find((a: Alternative) => a.recommended);
+            const recommended = debriefRes.data.alternatives?.find(
+              (a: Alternative) => a.recommended
+            );
             if (recommended) setSelectedAlternative(recommended.id);
           } catch {
             // No debrief yet, will need to generate
@@ -207,9 +209,7 @@ export default function DebriefView() {
         >
           ← Tillbaka till projekt
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Debrief: {project?.name}
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900">Debrief: {project?.name}</h1>
         <p className="text-gray-600 mt-2">
           Granska research-resultat och välj inriktning för programmet
         </p>
@@ -249,7 +249,9 @@ export default function DebriefView() {
           </h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {progress.map((msg, i) => (
-              <p key={i} className="text-gray-600 text-sm">{msg}</p>
+              <p key={i} className="text-gray-600 text-sm">
+                {msg}
+              </p>
             ))}
           </div>
           <div className="mt-4">
@@ -270,10 +272,13 @@ export default function DebriefView() {
               <div className="mt-4">
                 <h3 className="font-medium text-gray-900 mb-2">Källor</h3>
                 <div className="space-y-3">
-                  {debrief.sources.map((source, i) => (
+                  {debrief.sources.map((source, i) =>
                     typeof source === 'string' ? (
                       // Old format: simple string
-                      <div key={i} className="text-gray-600 text-sm pl-4 border-l-2 border-gray-200">
+                      <div
+                        key={i}
+                        className="text-gray-600 text-sm pl-4 border-l-2 border-gray-200"
+                      >
                         {source}
                       </div>
                     ) : (
@@ -282,13 +287,15 @@ export default function DebriefView() {
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-medium text-gray-900">{source.name}</p>
-                            <p className="text-xs text-gray-500">{source.type} • {source.year}</p>
+                            <p className="text-xs text-gray-500">
+                              {source.type} • {source.year}
+                            </p>
                           </div>
                         </div>
                         <p className="text-sm text-gray-600 mt-1 italic">"{source.relevance}"</p>
                       </div>
                     )
-                  ))}
+                  )}
                 </div>
               </div>
             )}
@@ -297,12 +304,8 @@ export default function DebriefView() {
           {/* Research Validation */}
           {debrief.validation && (
             <div className="bg-amber-50 rounded-lg shadow p-6 border border-amber-200">
-              <h2 className="text-xl font-semibold mb-4 text-amber-800">
-                Research-validering
-              </h2>
-              <p className="text-amber-700 mb-4 text-sm">
-                {debrief.validation.validationSummary}
-              </p>
+              <h2 className="text-xl font-semibold mb-4 text-amber-800">Research-validering</h2>
+              <p className="text-amber-700 mb-4 text-sm">{debrief.validation.validationSummary}</p>
 
               <div className="grid gap-4 md:grid-cols-3">
                 {/* Contradictions */}
@@ -340,18 +343,18 @@ export default function DebriefView() {
                       {debrief.validation.gaps.map((g, i) => (
                         <li key={i} className="text-sm text-gray-600">
                           <span className="font-medium">{g.topic}</span>
-                          <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${
-                            g.importance === 'critical'
-                              ? 'bg-red-100 text-red-700'
-                              : g.importance === 'important'
-                              ? 'bg-orange-100 text-orange-700'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}>
+                          <span
+                            className={`text-xs ml-2 px-1.5 py-0.5 rounded ${
+                              g.importance === 'critical'
+                                ? 'bg-red-100 text-red-700'
+                                : g.importance === 'important'
+                                  ? 'bg-orange-100 text-orange-700'
+                                  : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
                             {g.importance}
                           </span>
-                          {g.resolved && (
-                            <span className="text-green-600 ml-2">✓</span>
-                          )}
+                          {g.resolved && <span className="text-green-600 ml-2">✓</span>}
                         </li>
                       ))}
                     </ul>
@@ -372,9 +375,7 @@ export default function DebriefView() {
                         <li key={i} className="text-sm text-gray-600">
                           <span className="font-medium">{v.viewpoint}</span>
                           {v.source && (
-                            <span className="text-xs text-gray-400 block">
-                              Källa: {v.source}
-                            </span>
+                            <span className="text-xs text-gray-400 block">Källa: {v.source}</span>
                           )}
                           <span className="text-xs text-gray-500 block mt-1 italic">
                             {v.relevance}
@@ -383,7 +384,9 @@ export default function DebriefView() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-gray-500 italic">Inga alternativa perspektiv identifierade</p>
+                    <p className="text-sm text-gray-500 italic">
+                      Inga alternativa perspektiv identifierade
+                    </p>
                   )}
                 </div>
               </div>
@@ -414,9 +417,7 @@ export default function DebriefView() {
           {/* Alternatives */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Välj Inriktning</h2>
-            <p className="text-gray-600 mb-4">
-              Välj en av de tre inriktningarna för ditt program:
-            </p>
+            <p className="text-gray-600 mb-4">Välj en av de tre inriktningarna för ditt program:</p>
 
             <div className="grid gap-4 md:grid-cols-3">
               {debrief.alternatives?.map((alt) => (
@@ -425,9 +426,10 @@ export default function DebriefView() {
                   onClick={() => setSelectedAlternative(alt.id)}
                   className={`
                     border-2 rounded-lg p-4 cursor-pointer transition
-                    ${selectedAlternative === alt.id
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                    ${
+                      selectedAlternative === alt.id
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }
                     ${alt.recommended ? 'ring-2 ring-green-200' : ''}
                   `}
@@ -513,12 +515,8 @@ export default function DebriefView() {
       {phase === 'approved' && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-8 text-center">
           <div className="text-green-600 text-5xl mb-4">✓</div>
-          <h2 className="text-xl font-semibold text-green-800 mb-2">
-            Debrief Godkänd!
-          </h2>
-          <p className="text-green-700">
-            Omdirigerar till matris-skapande...
-          </p>
+          <h2 className="text-xl font-semibold text-green-800 mb-2">Debrief Godkänd!</h2>
+          <p className="text-green-700">Omdirigerar till matris-skapande...</p>
         </div>
       )}
     </div>

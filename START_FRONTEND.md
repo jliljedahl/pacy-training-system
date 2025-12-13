@@ -3,10 +3,12 @@
 ## Förutsättningar
 
 Innan du börjar, se till att du har installerat:
+
 - **Node.js** (version 18 eller senare)
 - **npm** (kommer med Node.js)
 
 Kontrollera att du har dem installerade:
+
 ```bash
 node --version
 npm --version
@@ -51,6 +53,7 @@ npm run dev
 ### Alternativ B: Starta både Frontend och Backend samtidigt
 
 Från rotmappen:
+
 ```bash
 npm run dev
 ```
@@ -78,15 +81,19 @@ Du ska nu se din Pacy Training System med den nya Steve Jobs-inspirerade designe
 ## Vanliga Problem och Lösningar
 
 ### Problem: "command not found: npm"
+
 **Lösning**: Node.js är inte installerat. Ladda ner från nodejs.org
 
 ### Problem: "Cannot find module"
+
 **Lösning**: Kör `npm install` i frontend-mappen
 
 ### Problem: Port 5173 är redan använd
+
 **Lösning**: Vite hittar automatiskt en ledig port. Kolla terminalen för det nya numret.
 
 ### Problem: "EACCES: permission denied"
+
 **Lösning**: Använd `sudo` (Mac/Linux) eller kör Terminal som administratör (Windows)
 
 ---
@@ -108,9 +115,9 @@ Tryck **Ctrl + C** (eller **Cmd + C** på Mac) i terminalen där frontend körs.
 ## Nästa Steg
 
 När frontend körs kan du:
+
 1. Skapa nya projekt
 2. Se dina befintliga projekt
 3. Utveckla vidare med den nya designen
 
 Lycka till! 🚀
-

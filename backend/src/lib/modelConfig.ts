@@ -16,10 +16,10 @@ export interface ModelConfig {
 
 // OpenAI model constants
 const MODELS = {
-  thinking: 'gpt-5.2',            // For reasoning tasks
-  fast: 'gpt-5.2-chat-latest',    // For standard tasks
-  coding: 'gpt-5-codex',          // For code generation
-  cheap: 'gpt-4.1-mini',          // For simple/batch tasks
+  thinking: 'gpt-5.2', // For reasoning tasks
+  fast: 'gpt-5.2-chat-latest', // For standard tasks
+  coding: 'gpt-5-codex', // For code generation
+  cheap: 'gpt-4.1-mini', // For simple/batch tasks
 };
 
 // Agent model configurations - all using OpenAI
@@ -81,7 +81,7 @@ export const agentModels: Record<string, ModelConfig> = {
   },
 
   // Default fallback
-  'default': {
+  default: {
     provider: 'openai',
     model: MODELS.fast,
     maxTokens: 4096,

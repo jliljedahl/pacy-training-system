@@ -51,7 +51,6 @@ export interface DebriefFeedbackResult {
  * Handles the new workflow: Research → Debrief with 3 alternatives → Feedback loop → Matrix
  */
 export class DebriefWorkflowService {
-
   /**
    * Step 1: Execute research phase
    */
@@ -76,7 +75,6 @@ export class DebriefWorkflowService {
         step: 'research',
         agentName: 'research-director',
         status: 'running',
-        
       },
     });
 
@@ -97,11 +95,15 @@ ${project.desiredOutcomes || 'Ej specificerat'}
 SÄRSKILD VINKEL/RAMVERK:
 ${project.particularAngle || 'Ingen specificerad'}
 
-${project.sourceMaterials.length > 0 ? `
+${
+  project.sourceMaterials.length > 0
+    ? `
 KÄLLMATERIAL:
 ${project.sourceMaterials.map((m) => `- ${m.filename} (${m.type})`).join('\n')}
 Strikt källtrohet krävs: ${project.strictFidelity}
-` : 'Inget källmaterial tillhandahållet.'}
+`
+    : 'Inget källmaterial tillhandahållet.'
+}
 
 DIN UPPGIFT:
 Gör en grundlig research och sammanställ:
@@ -270,7 +272,7 @@ VIKTIGT:
       } else {
         throw new Error('No JSON found');
       }
-    } catch (e) {
+    } catch {
       validation = {
         contradictions: [],
         gaps: [],
@@ -281,7 +283,7 @@ VIKTIGT:
 
     // Check if we need to deepen research
     const criticalGaps = validation.gaps.filter(
-      g => g.importance === 'critical' || g.importance === 'important'
+      (g) => g.importance === 'critical' || g.importance === 'important'
     );
     const hasContrarianViewsToExplore = validation.contrarianViews.length > 0;
 
@@ -299,15 +301,19 @@ ${researchResult}
 """
 
 IDENTIFIERADE LUCKOR ATT FYLLA:
-${criticalGaps.map(g => `- ${g.topic}: ${g.importance}`).join('\n')}
+${criticalGaps.map((g) => `- ${g.topic}: ${g.importance}`).join('\n')}
 
 ALTERNATIVA PERSPEKTIV ATT UTFORSKA:
-${validation.contrarianViews.map(v => `- ${v.viewpoint}`).join('\n')}
+${validation.contrarianViews.map((v) => `- ${v.viewpoint}`).join('\n')}
 
-${validation.contradictions.length > 0 ? `
+${
+  validation.contradictions.length > 0
+    ? `
 MOTSÄGELSER ATT KLARGÖRA:
-${validation.contradictions.map(c => `- ${c.area}: ${c.description}`).join('\n')}
-` : ''}
+${validation.contradictions.map((c) => `- ${c.area}: ${c.description}`).join('\n')}
+`
+    : ''
+}
 
 DIN UPPGIFT:
 Komplettera researchen med:
@@ -330,7 +336,7 @@ Var specifik och faktabaserad.
       validation.deepenedResearch = deepenedResearch;
 
       // Mark gaps as resolved
-      validation.gaps = validation.gaps.map(g => ({
+      validation.gaps = validation.gaps.map((g) => ({
         ...g,
         resolved: true,
       }));
@@ -410,7 +416,6 @@ ${deepenedResearch}`;
         step: 'create_debrief',
         agentName: 'content-architect',
         status: 'running',
-        
       },
     });
 
@@ -428,31 +433,51 @@ BRIEF:
 RESEARCH-RESULTAT:
 ${researchResult}
 
-${validation ? `
+${
+  validation
+    ? `
 RESEARCH-VALIDERING (viktigt att beakta):
 
-${validation.contradictions.length > 0 ? `
+${
+  validation.contradictions.length > 0
+    ? `
 **Identifierade motsägelser i källorna:**
-${validation.contradictions.map(c => `- ${c.area}: ${c.description}`).join('\n')}
-` : 'Inga motsägelser identifierade.'}
+${validation.contradictions.map((c) => `- ${c.area}: ${c.description}`).join('\n')}
+`
+    : 'Inga motsägelser identifierade.'
+}
 
-${validation.gaps.length > 0 ? `
-**Identifierade kunskapsluckor (${validation.gaps.filter(g => g.resolved).length}/${validation.gaps.length} åtgärdade):**
-${validation.gaps.map(g => `- ${g.topic} (${g.importance})${g.resolved ? ' ✓ åtgärdad' : ''}`).join('\n')}
-` : 'Inga kritiska luckor identifierade.'}
+${
+  validation.gaps.length > 0
+    ? `
+**Identifierade kunskapsluckor (${validation.gaps.filter((g) => g.resolved).length}/${validation.gaps.length} åtgärdade):**
+${validation.gaps.map((g) => `- ${g.topic} (${g.importance})${g.resolved ? ' ✓ åtgärdad' : ''}`).join('\n')}
+`
+    : 'Inga kritiska luckor identifierade.'
+}
 
-${validation.contrarianViews.length > 0 ? `
+${
+  validation.contrarianViews.length > 0
+    ? `
 **Alternativa/konträra perspektiv att överväga:**
-${validation.contrarianViews.map(v => `- ${v.viewpoint}${v.source ? ` (${v.source})` : ''}: ${v.relevance}`).join('\n')}
-` : ''}
+${validation.contrarianViews.map((v) => `- ${v.viewpoint}${v.source ? ` (${v.source})` : ''}: ${v.relevance}`).join('\n')}
+`
+    : ''
+}
 
 **Valideringssummering:** ${validation.validationSummary}
-` : ''}
+`
+    : ''
+}
 
-${project.sourceMaterials.length > 0 ? `
+${
+  project.sourceMaterials.length > 0
+    ? `
 KÄLLMATERIAL:
 ${project.sourceMaterials.map((m) => `- ${m.filename}`).join('\n')}
-` : ''}
+`
+    : ''
+}
 
 DIN UPPGIFT:
 Skapa en strukturerad debrief i följande JSON-format:
@@ -520,15 +545,30 @@ VIKTIGT:
       } else {
         throw new Error('No JSON found in response');
       }
-    } catch (e) {
+    } catch {
       // Fallback structure if parsing fails
       parsedDebrief = {
         researchSummary: debriefResult,
         sources: [],
         alternatives: [
-          { id: 'A', title: 'Standard approach', description: debriefResult.substring(0, 500), recommended: true },
-          { id: 'B', title: 'Alternativ approach', description: 'Alternativ vinkel på innehållet', recommended: false },
-          { id: 'C', title: 'Djupgående approach', description: 'Mer djupgående behandling av ämnet', recommended: false },
+          {
+            id: 'A',
+            title: 'Standard approach',
+            description: debriefResult.substring(0, 500),
+            recommended: true,
+          },
+          {
+            id: 'B',
+            title: 'Alternativ approach',
+            description: 'Alternativ vinkel på innehållet',
+            recommended: false,
+          },
+          {
+            id: 'C',
+            title: 'Djupgående approach',
+            description: 'Mer djupgående behandling av ämnet',
+            recommended: false,
+          },
         ],
         fullDebrief: debriefResult,
       };
@@ -578,7 +618,7 @@ VIKTIGT:
         step: 'debrief_feedback',
         agentName: 'content-architect',
         status: 'completed',
-        
+
         completedAt: new Date(),
         result: JSON.stringify({ feedback, selectedAlternative }),
       },
@@ -637,8 +677,8 @@ Var koncis och professionell.
       orderBy: { createdAt: 'desc' },
     });
 
-    const researchResult = previousSteps.find(s => s.step === 'research')?.result || '';
-    const previousDebrief = previousSteps.find(s => s.step === 'create_debrief')?.result || '';
+    const researchResult = previousSteps.find((s) => s.step === 'research')?.result || '';
+    const previousDebrief = previousSteps.find((s) => s.step === 'create_debrief')?.result || '';
 
     onProgress?.('🔄 Genererar ny debrief baserat på feedback...');
 
@@ -695,14 +735,29 @@ VIKTIGT:
       } else {
         throw new Error('No JSON found');
       }
-    } catch (e) {
+    } catch {
       parsedDebrief = {
         researchSummary: newDebriefResult,
         sources: [],
         alternatives: [
-          { id: 'A', title: 'Uppdaterat alternativ', description: newDebriefResult.substring(0, 500), recommended: true },
-          { id: 'B', title: 'Alternativ B', description: 'Alternativt approach', recommended: false },
-          { id: 'C', title: 'Alternativ C', description: 'Tredje alternativet', recommended: false },
+          {
+            id: 'A',
+            title: 'Uppdaterat alternativ',
+            description: newDebriefResult.substring(0, 500),
+            recommended: true,
+          },
+          {
+            id: 'B',
+            title: 'Alternativ B',
+            description: 'Alternativt approach',
+            recommended: false,
+          },
+          {
+            id: 'C',
+            title: 'Alternativ C',
+            description: 'Tredje alternativet',
+            recommended: false,
+          },
         ],
         fullDebrief: newDebriefResult,
       };
@@ -716,7 +771,7 @@ VIKTIGT:
         step: 'create_debrief',
         agentName: 'content-architect',
         status: 'completed',
-        
+
         completedAt: new Date(),
         result: JSON.stringify(parsedDebrief),
       },
@@ -744,7 +799,7 @@ VIKTIGT:
         step: 'approve_debrief',
         agentName: 'user',
         status: 'completed',
-        
+
         completedAt: new Date(),
         result: JSON.stringify({ approved: true, selectedAlternative }),
       },

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Clock, CheckCircle, Trash2 } from 'lucide-react';
+import { FileText, Clock, Trash2 } from 'lucide-react';
 import { projectsApi, Project } from '../services/api';
 
 export default function ProjectList() {
@@ -35,47 +35,49 @@ export default function ProjectList() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string; border: string; label: string }> = {
-      information_gathering: { 
-        bg: 'bg-[#f5f5f7]', 
-        text: 'text-[#1d1d1f]', 
+      information_gathering: {
+        bg: 'bg-[#f5f5f7]',
+        text: 'text-[#1d1d1f]',
         border: 'border-[#d2d2d7]',
-        label: 'Gathering Info' 
+        label: 'Gathering Info',
       },
-      program_design: { 
-        bg: 'bg-[#e3f2fd]', 
-        text: 'text-[#007AFF]', 
+      program_design: {
+        bg: 'bg-[#e3f2fd]',
+        text: 'text-[#007AFF]',
         border: 'border-[#007AFF]/20',
-        label: 'Program Design' 
+        label: 'Program Design',
       },
-      article_creation: { 
-        bg: 'bg-[#fff4e6]', 
-        text: 'text-[#ff9500]', 
+      article_creation: {
+        bg: 'bg-[#fff4e6]',
+        text: 'text-[#ff9500]',
         border: 'border-[#ff9500]/20',
-        label: 'Creating Articles' 
+        label: 'Creating Articles',
       },
-      video_creation: { 
-        bg: 'bg-[#f3e5f5]', 
-        text: 'text-[#af52de]', 
+      video_creation: {
+        bg: 'bg-[#f3e5f5]',
+        text: 'text-[#af52de]',
         border: 'border-[#af52de]/20',
-        label: 'Creating Videos' 
+        label: 'Creating Videos',
       },
-      quiz_creation: { 
-        bg: 'bg-[#e8eaf6]', 
-        text: 'text-[#5856d6]', 
+      quiz_creation: {
+        bg: 'bg-[#e8eaf6]',
+        text: 'text-[#5856d6]',
         border: 'border-[#5856d6]/20',
-        label: 'Creating Quizzes' 
+        label: 'Creating Quizzes',
       },
-      completed: { 
-        bg: 'bg-[#e8f5e9]', 
-        text: 'text-[#34c759]', 
+      completed: {
+        bg: 'bg-[#e8f5e9]',
+        text: 'text-[#34c759]',
         border: 'border-[#34c759]/20',
-        label: 'Completed' 
+        label: 'Completed',
       },
     };
 
     const badge = badges[status] || badges.information_gathering;
     return (
-      <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium border ${badge.bg} ${badge.text} ${badge.border}`}>
+      <span
+        className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium border ${badge.bg} ${badge.text} ${badge.border}`}
+      >
         {badge.label}
       </span>
     );
@@ -102,10 +104,7 @@ export default function ProjectList() {
         <p className="text-[#86868b] text-base mb-8 max-w-md mx-auto">
           Create your first training program to get started with AI-powered content creation.
         </p>
-        <Link
-          to="/onboarding"
-          className="premium-button text-white inline-flex items-center"
-        >
+        <Link to="/onboarding" className="premium-button text-white inline-flex items-center">
           Skapa nytt projekt
         </Link>
       </div>
@@ -115,7 +114,9 @@ export default function ProjectList() {
   return (
     <div>
       <div className="mb-12">
-        <h1 className="text-5xl font-semibold text-[#1d1d1f] mb-3 tracking-tight">Training Programs</h1>
+        <h1 className="text-5xl font-semibold text-[#1d1d1f] mb-3 tracking-tight">
+          Training Programs
+        </h1>
         <p className="text-[#86868b] text-lg">Manage and create your training content</p>
       </div>
 
@@ -141,11 +142,13 @@ export default function ProjectList() {
             <div className="space-y-4 mb-6">
               <div className="flex items-center text-sm text-[#86868b]">
                 <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span>{new Date(project.createdAt).toLocaleDateString('sv-SE', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</span>
+                <span>
+                  {new Date(project.createdAt).toLocaleDateString('sv-SE', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
               </div>
               <div>{getStatusBadge(project.status)}</div>
               <div className="flex items-center justify-between pt-2 border-t border-gray-100">
@@ -154,7 +157,8 @@ export default function ProjectList() {
                 </span>
               </div>
               <div className="text-sm text-[#86868b]">
-                <span className="font-medium text-[#1d1d1f]">Deliverables:</span> {project.deliverables.replace(/_/g, ' ')}
+                <span className="font-medium text-[#1d1d1f]">Deliverables:</span>{' '}
+                {project.deliverables.replace(/_/g, ' ')}
               </div>
             </div>
 

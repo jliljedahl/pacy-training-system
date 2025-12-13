@@ -23,6 +23,7 @@ npm run install:all
 ```
 
 This installs dependencies for:
+
 - Root workspace
 - Backend
 - Frontend
@@ -70,6 +71,7 @@ npm run dev
 ```
 
 This starts both:
+
 - **Backend**: http://localhost:3000
 - **Frontend**: http://localhost:5173
 
@@ -105,6 +107,7 @@ npm run prisma:generate
 ### "ANTHROPIC_API_KEY is not set"
 
 Make sure you've:
+
 1. Created `backend/.env` from `backend/.env.example`
 2. Added your actual API key
 3. Restarted the backend server
@@ -112,6 +115,7 @@ Make sure you've:
 ### "Port 3000 already in use"
 
 Edit `backend/.env` and change the PORT:
+
 ```
 PORT=3001
 ```
@@ -128,6 +132,7 @@ npm run prisma:migrate
 ### File upload fails
 
 Ensure uploads directory exists and has write permissions:
+
 ```bash
 mkdir -p uploads
 chmod 755 uploads

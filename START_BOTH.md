@@ -11,6 +11,7 @@ Frontend (React) behöver backend (API) för att fungera. Båda måste köra sam
 Du behöver två terminaler - en för frontend och en för backend.
 
 ### Terminal 1: Backend
+
 1. Öppna terminal i Cursor (`Cmd + `` eller Terminal → New Terminal)
 2. Klicka på `+` för att öppna en ny terminal (nu har du 2 terminaler)
 
@@ -27,6 +28,7 @@ npm run dev
 ```
 
 Du ska se:
+
 ```
 🚀 Pacy Training System API running on port 3000
 ```
@@ -46,6 +48,7 @@ npm run dev
 ```
 
 Du ska se:
+
 ```
 ➜  Local:   http://localhost:5173/
 ```
@@ -79,11 +82,13 @@ Detta startar både frontend och backend automatiskt!
 ### Problem: "Failed to create project"
 
 **Lösning 1: Kontrollera att backend körs**
+
 - Öppna: http://localhost:3000/health
 - Du ska se: `{"status":"ok"}`
 - Om inte: Starta backend (se Steg 2)
 
 **Lösning 2: Kontrollera databas**
+
 - Backend behöver en databas (SQLite i `backend/prisma/dev.db`)
 - Om databas saknas, kör i backend-mappen:
   ```bash
@@ -91,6 +96,7 @@ Detta startar både frontend och backend automatiskt!
   ```
 
 **Lösning 3: Kontrollera konsolen**
+
 - Öppna Developer Tools i webbläsaren (F12 eller Cmd+Option+I)
 - Gå till "Console"-fliken
 - Kolla efter felmeddelanden
@@ -98,6 +104,7 @@ Detta startar både frontend och backend automatiskt!
 ### Problem: "Cannot connect to API"
 
 **Lösning:**
+
 - Kontrollera att backend körs på port 3000
 - Kontrollera att frontend körs på port 5173
 - Se till att ingen annan app använder dessa portar
@@ -105,6 +112,7 @@ Detta startar både frontend och backend automatiskt!
 ### Problem: "Port already in use"
 
 **Lösning:**
+
 - Stoppa den process som använder porten
 - Eller ändra port i konfigurationen
 
@@ -136,10 +144,10 @@ Tryck `Ctrl + C` (eller `Cmd + C` på Mac) i båda terminalerna.
 ## Nästa Steg
 
 När både frontend och backend körs kan du:
+
 1. Skapa nya projekt
 2. Ladda upp briefs
 3. Se dina projekt
 4. Utveckla vidare!
 
 Lycka till! 🚀
-

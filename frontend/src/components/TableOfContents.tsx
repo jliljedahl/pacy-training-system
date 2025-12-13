@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, FileText, Video, HelpCircle, Edit2, Save, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Video,
+  HelpCircle,
+  Edit2,
+  Save,
+  X,
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -18,9 +27,9 @@ interface TableOfContentsProps {
   setEditedQuizQuestions?: (questions: any[]) => void;
 }
 
-export default function TableOfContents({ 
-  project, 
-  onEditContent, 
+export default function TableOfContents({
+  project,
+  onEditContent,
   onSaveContent,
   onEditQuiz,
   onSaveQuiz,
@@ -30,7 +39,7 @@ export default function TableOfContents({
   setEditedContent,
   editingQuiz,
   editedQuizQuestions = [],
-  setEditedQuizQuestions
+  setEditedQuizQuestions,
 }: TableOfContentsProps) {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
@@ -142,13 +151,22 @@ export default function TableOfContents({
                             </div>
                             <div className="flex items-center gap-2">
                               {hasArticle && (
-                                <FileText className="w-4 h-4 text-green-600" title="Artikel finns" />
+                                <FileText
+                                  className="w-4 h-4 text-green-600"
+                                  title="Artikel finns"
+                                />
                               )}
                               {hasVideo && (
-                                <Video className="w-4 h-4 text-blue-600" title="Video-narrativ finns" />
+                                <Video
+                                  className="w-4 h-4 text-blue-600"
+                                  title="Video-narrativ finns"
+                                />
                               )}
                               {hasQuiz && (
-                                <HelpCircle className="w-4 h-4 text-purple-600" title="Quiz finns" />
+                                <HelpCircle
+                                  className="w-4 h-4 text-purple-600"
+                                  title="Quiz finns"
+                                />
                               )}
                             </div>
                           </button>
@@ -173,7 +191,13 @@ export default function TableOfContents({
                                       </span>
                                       {onEditContent && (
                                         <button
-                                          onClick={() => onEditContent('article', session.article.id, session.article.content)}
+                                          onClick={() =>
+                                            onEditContent(
+                                              'article',
+                                              session.article.id,
+                                              session.article.content
+                                            )
+                                          }
                                           className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1"
                                         >
                                           <Edit2 className="w-3 h-3" />
@@ -182,7 +206,8 @@ export default function TableOfContents({
                                       )}
                                     </div>
                                   </div>
-                                  {editingContent?.type === 'article' && editingContent.id === session.article.id ? (
+                                  {editingContent?.type === 'article' &&
+                                  editingContent.id === session.article.id ? (
                                     <div className="space-y-2">
                                       <textarea
                                         value={editedContent}
@@ -192,7 +217,9 @@ export default function TableOfContents({
                                       />
                                       <div className="flex gap-2">
                                         <button
-                                          onClick={() => onSaveContent?.('article', session.article.id)}
+                                          onClick={() =>
+                                            onSaveContent?.('article', session.article.id)
+                                          }
                                           className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1 text-sm"
                                         >
                                           <Save className="w-4 h-4" />
@@ -234,7 +261,13 @@ export default function TableOfContents({
                                       </span>
                                       {onEditContent && (
                                         <button
-                                          onClick={() => onEditContent('video', session.videoScript.id, session.videoScript.content)}
+                                          onClick={() =>
+                                            onEditContent(
+                                              'video',
+                                              session.videoScript.id,
+                                              session.videoScript.content
+                                            )
+                                          }
                                           className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1"
                                         >
                                           <Edit2 className="w-3 h-3" />
@@ -243,7 +276,8 @@ export default function TableOfContents({
                                       )}
                                     </div>
                                   </div>
-                                  {editingContent?.type === 'video' && editingContent.id === session.videoScript.id ? (
+                                  {editingContent?.type === 'video' &&
+                                  editingContent.id === session.videoScript.id ? (
                                     <div className="space-y-2">
                                       <textarea
                                         value={editedContent}
@@ -253,7 +287,9 @@ export default function TableOfContents({
                                       />
                                       <div className="flex gap-2">
                                         <button
-                                          onClick={() => onSaveContent?.('video', session.videoScript.id)}
+                                          onClick={() =>
+                                            onSaveContent?.('video', session.videoScript.id)
+                                          }
                                           className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1 text-sm"
                                         >
                                           <Save className="w-4 h-4" />
@@ -293,23 +329,32 @@ export default function TableOfContents({
                                           <span className="ml-2 text-green-600">✓ Godkänd</span>
                                         )}
                                       </span>
-                                      {onEditQuiz && session.quiz.questions && session.quiz.questions.length > 0 && (
-                                        <button
-                                          onClick={() => onEditQuiz(session.quiz.id, session.quiz.questions)}
-                                          className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1"
-                                        >
-                                          <Edit2 className="w-3 h-3" />
-                                          Redigera
-                                        </button>
-                                      )}
+                                      {onEditQuiz &&
+                                        session.quiz.questions &&
+                                        session.quiz.questions.length > 0 && (
+                                          <button
+                                            onClick={() =>
+                                              onEditQuiz(session.quiz.id, session.quiz.questions)
+                                            }
+                                            className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                            Redigera
+                                          </button>
+                                        )}
                                     </div>
                                   </div>
                                   {editingQuiz === session.quiz.id ? (
                                     <div className="space-y-3">
                                       {editedQuizQuestions.map((q: any, idx: number) => (
-                                        <div key={idx} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                                        <div
+                                          key={idx}
+                                          className="border border-gray-200 rounded-lg p-3 space-y-2"
+                                        >
                                           <div>
-                                            <label className="text-xs font-medium text-gray-700">Fråga {idx + 1}</label>
+                                            <label className="text-xs font-medium text-gray-700">
+                                              Fråga {idx + 1}
+                                            </label>
                                             <textarea
                                               value={q.question}
                                               onChange={(e) => {
@@ -323,7 +368,9 @@ export default function TableOfContents({
                                           </div>
                                           <div className="grid grid-cols-3 gap-2">
                                             <div>
-                                              <label className="text-xs font-medium text-gray-700">A)</label>
+                                              <label className="text-xs font-medium text-gray-700">
+                                                A)
+                                              </label>
                                               <input
                                                 type="text"
                                                 value={q.optionA}
@@ -336,7 +383,9 @@ export default function TableOfContents({
                                               />
                                             </div>
                                             <div>
-                                              <label className="text-xs font-medium text-gray-700">B)</label>
+                                              <label className="text-xs font-medium text-gray-700">
+                                                B)
+                                              </label>
                                               <input
                                                 type="text"
                                                 value={q.optionB}
@@ -349,7 +398,9 @@ export default function TableOfContents({
                                               />
                                             </div>
                                             <div>
-                                              <label className="text-xs font-medium text-gray-700">C)</label>
+                                              <label className="text-xs font-medium text-gray-700">
+                                                C)
+                                              </label>
                                               <input
                                                 type="text"
                                                 value={q.optionC}
@@ -363,7 +414,9 @@ export default function TableOfContents({
                                             </div>
                                           </div>
                                           <div>
-                                            <label className="text-xs font-medium text-gray-700">Rätt svar</label>
+                                            <label className="text-xs font-medium text-gray-700">
+                                              Rätt svar
+                                            </label>
                                             <select
                                               value={q.correctAnswer}
                                               onChange={(e) => {
@@ -382,7 +435,9 @@ export default function TableOfContents({
                                       ))}
                                       <div className="flex gap-2">
                                         <button
-                                          onClick={() => onSaveQuiz?.(session.quiz.id, editedQuizQuestions)}
+                                          onClick={() =>
+                                            onSaveQuiz?.(session.quiz.id, editedQuizQuestions)
+                                          }
                                           className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1 text-sm"
                                         >
                                           <Save className="w-4 h-4" />
@@ -398,7 +453,8 @@ export default function TableOfContents({
                                       </div>
                                     </div>
                                   ) : (
-                                    session.quiz.questions && session.quiz.questions.length > 0 && (
+                                    session.quiz.questions &&
+                                    session.quiz.questions.length > 0 && (
                                       <div className="space-y-3">
                                         {session.quiz.questions.map((q: any, idx: number) => (
                                           <div key={q.id} className="text-sm">
@@ -440,4 +496,3 @@ export default function TableOfContents({
     </div>
   );
 }
-

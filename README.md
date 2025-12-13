@@ -9,6 +9,7 @@ An automated system for creating high-quality training programs using specialize
 The Pacy Training System orchestrates multiple specialized AI agents to transform client briefs into complete training programs with articles, video scripts, and quizzes. The system ensures content meets HIST principles: brevity with impact, practical focus, micro-learning format, and engaging narrative flow.
 
 **Key Features:**
+
 - Conversational brief interview for project setup
 - Multi-agent collaborative content creation
 - Research validation with automatic gap-filling
@@ -38,6 +39,7 @@ Database (PostgreSQL via Supabase)
 ### Tech Stack
 
 **Frontend:**
+
 - React 18 with TypeScript
 - React Router for navigation
 - Tailwind CSS for styling
@@ -45,6 +47,7 @@ Database (PostgreSQL via Supabase)
 - Supabase Auth for authentication
 
 **Backend:**
+
 - Node.js + Express
 - TypeScript
 - Prisma ORM
@@ -60,31 +63,32 @@ All agents use OpenAI models:
 
 ```typescript
 const MODELS = {
-  thinking: 'gpt-5.2',            // For reasoning/orchestration tasks
-  fast: 'gpt-5.2-chat-latest',    // For standard content tasks
-  cheap: 'gpt-4.1-mini',          // For simple/batch tasks
+  thinking: 'gpt-5.2', // For reasoning/orchestration tasks
+  fast: 'gpt-5.2-chat-latest', // For standard content tasks
+  cheap: 'gpt-4.1-mini', // For simple/batch tasks
 };
 ```
 
 ### Agent Model Assignments
 
-| Agent | Model | Purpose |
-|-------|-------|---------|
-| content-architect | gpt-5.2 | Orchestration, decision-making |
-| research-director | gpt-5.2 | Deep research, source verification |
-| hist-compliance-editor | gpt-5.2 | Quality enforcement |
-| article-writer | gpt-5.2-chat-latest | Content creation |
-| fact-checker | gpt-5.2-chat-latest | Accuracy verification |
-| source-analyst | gpt-5.2-chat-latest | Material analysis |
-| brief-interviewer | gpt-5.2-chat-latest | User onboarding |
-| video-narrator | gpt-4.1-mini | Script creation |
-| assessment-designer | gpt-4.1-mini | Quiz generation |
+| Agent                  | Model               | Purpose                            |
+| ---------------------- | ------------------- | ---------------------------------- |
+| content-architect      | gpt-5.2             | Orchestration, decision-making     |
+| research-director      | gpt-5.2             | Deep research, source verification |
+| hist-compliance-editor | gpt-5.2             | Quality enforcement                |
+| article-writer         | gpt-5.2-chat-latest | Content creation                   |
+| fact-checker           | gpt-5.2-chat-latest | Accuracy verification              |
+| source-analyst         | gpt-5.2-chat-latest | Material analysis                  |
+| brief-interviewer      | gpt-5.2-chat-latest | User onboarding                    |
+| video-narrator         | gpt-4.1-mini        | Script creation                    |
+| assessment-designer    | gpt-4.1-mini        | Quiz generation                    |
 
 ---
 
 ## The 11 Specialized Agents
 
 ### 1. **Content Architect** (Main Coordinator)
+
 - **Role**: Orchestrates the entire workflow, makes final decisions
 - **Model**: gpt-5.2
 - **Responsibilities**:
@@ -94,6 +98,7 @@ const MODELS = {
   - Manages quality gates
 
 ### 2. **Research Director** (Deep Research Specialist)
+
 - **Role**: Conducts comprehensive external research
 - **Model**: gpt-5.2
 - **Responsibilities**:
@@ -103,6 +108,7 @@ const MODELS = {
   - Provide motivated source selection
 
 ### 3. **Brief Interviewer** (Onboarding Specialist)
+
 - **Role**: Conducts conversational project setup
 - **Model**: gpt-5.2-chat-latest
 - **Responsibilities**:
@@ -111,6 +117,7 @@ const MODELS = {
   - Clarify deliverables and constraints
 
 ### 4. **Source Analyst** (Company Materials Specialist)
+
 - **Role**: Analyzes client-provided source materials
 - **Model**: gpt-5.2-chat-latest
 - **Responsibilities**:
@@ -119,6 +126,7 @@ const MODELS = {
   - Create terminology guidelines
 
 ### 5. **Article Writer** (Content Creator)
+
 - **Role**: Writes training articles following HIST principles
 - **Model**: gpt-5.2-chat-latest
 - **Requirements**:
@@ -127,6 +135,7 @@ const MODELS = {
   - Concrete, role-specific examples
 
 ### 6. **HIST Compliance Editor** (Quality Enforcer)
+
 - **Role**: Enforces HIST methodology compliance
 - **Model**: gpt-5.2
 - **Checks**:
@@ -136,15 +145,18 @@ const MODELS = {
   - Narrative energy
 
 ### 7. **Fact Checker** (Accuracy Verifier)
+
 - **Role**: Verifies factual accuracy and source fidelity
 - **Model**: gpt-5.2-chat-latest
 - **Special**: VETO POWER on strict fidelity projects
 
 ### 8. **Video Narrator** (Script Writer)
+
 - **Role**: Creates ~250 word video scripts
 - **Model**: gpt-4.1-mini
 
 ### 9. **Assessment Designer** (Quiz Creator)
+
 - **Role**: Designs scenario-based quizzes
 - **Model**: gpt-4.1-mini
 - **Standards**:
@@ -153,10 +165,12 @@ const MODELS = {
   - Meaningful distractors
 
 ### 10. **Program Matrix Formatter**
+
 - **Role**: Formats matrix output
 - **Model**: gpt-5.2-chat-latest
 
 ### 11. **Company Researcher**
+
 - **Role**: Analyzes company websites for context
 - **Model**: gpt-5.2-chat-latest
 
@@ -167,6 +181,7 @@ const MODELS = {
 ### **Phase 0: Onboarding**
 
 **Steps**:
+
 1. User starts new project
 2. **Brief Interviewer** conducts conversational interview
 3. Optional: Company URL analysis for context
@@ -206,6 +221,7 @@ const MODELS = {
 ### **Phase 2: Program Design**
 
 **Steps**:
+
 1. **Program Matrix created**:
    - 3-4 chapters (thematic blocks)
    - 2-8 sessions per chapter
@@ -223,6 +239,7 @@ const MODELS = {
 ### **Phase 3: Article Creation**
 
 **Workflow per Article**:
+
 ```
 Article Writer creates draft
     ↓
@@ -236,6 +253,7 @@ User approval
 ```
 
 **Batch Options** (after first article approved):
+
 - Sequential: One at a time
 - By Chapter: Complete one chapter, then next
 - Full Batch: All articles at once
@@ -273,6 +291,7 @@ User (Supabase Auth)
 ```
 
 **Status Flow**:
+
 ```
 information_gathering → research → debrief_review → matrix_creation →
 article_creation → video_creation → quiz_creation → completed
@@ -283,24 +302,29 @@ article_creation → video_creation → quiz_creation → completed
 ## HIST Methodology Principles
 
 ### 1. **Brevity with Impact**
+
 - Articles: 800-1200 words (optimal 800-1000)
 - Videos: ~250 words
 - Sessions: 5-7 minute reading time
 
 ### 2. **Theory → Practice Balance**
+
 - 30-40% theory/concepts
 - 60-70% practical application
 
 ### 3. **Micro-Learning Format**
+
 - One focused topic per session
 - Progressive skill building
 
 ### 4. **Concrete & Actionable**
+
 - Role-specific examples
 - Real-world scenarios
 - No abstract generalizations
 
 ### 5. **Engaging Narrative Flow**
+
 - Maintain energy throughout
 - Avoid "checklist drift"
 - Clear WIIFM (What's In It For Me)
@@ -310,6 +334,7 @@ article_creation → video_creation → quiz_creation → completed
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 20+
 - PostgreSQL (or Supabase account)
 - OpenAI API key
@@ -317,12 +342,14 @@ article_creation → video_creation → quiz_creation → completed
 ### Installation
 
 1. **Clone repository**:
+
 ```bash
 git clone <repository-url>
 cd pacy-training-system
 ```
 
 2. **Install dependencies**:
+
 ```bash
 npm run install:all
 ```
@@ -330,6 +357,7 @@ npm run install:all
 3. **Configure environment**:
 
 Create `backend/.env`:
+
 ```env
 DATABASE_URL="postgresql://..."
 OPENAI_API_KEY="sk-..."
@@ -340,6 +368,7 @@ PORT=3001
 ```
 
 Create `frontend/.env`:
+
 ```env
 VITE_SUPABASE_URL="https://xxx.supabase.co"
 VITE_SUPABASE_ANON_KEY="eyJ..."
@@ -347,6 +376,7 @@ VITE_API_URL="http://localhost:3001"
 ```
 
 4. **Setup database**:
+
 ```bash
 cd backend
 npx prisma migrate dev
@@ -354,11 +384,13 @@ npx prisma generate
 ```
 
 5. **Start development servers**:
+
 ```bash
 npm run dev
 ```
 
 6. **Access application**:
+
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3001
 
@@ -418,6 +450,7 @@ pacy-training-system/
 ## API Endpoints
 
 ### Projects
+
 ```
 POST   /api/projects              # Create project
 GET    /api/projects              # List user's projects
@@ -426,6 +459,7 @@ POST   /api/projects/:id/sources  # Upload source material
 ```
 
 ### Debrief Workflow
+
 ```
 GET    /api/workflow/projects/:id/debrief/start      # Start research + debrief
 GET    /api/workflow/projects/:id/debrief            # Get current debrief
@@ -435,6 +469,7 @@ POST   /api/workflow/projects/:id/debrief/approve    # Approve and proceed
 ```
 
 ### Matrix Workflow
+
 ```
 GET    /api/workflow/projects/:id/design             # Create program matrix
 POST   /api/workflow/projects/:id/matrix/regenerate  # Regenerate with feedback
@@ -442,6 +477,7 @@ POST   /api/workflow/projects/:id/approve-matrix     # Approve matrix
 ```
 
 ### Content Generation (SSE Streams)
+
 ```
 GET    /api/workflow/sessions/:id/article            # Generate single article
 GET    /api/workflow/projects/:id/articles/batch-all # Batch all articles
@@ -460,6 +496,7 @@ MIT
 ## Acknowledgments
 
 Built with:
+
 - OpenAI GPT-5.2 for AI agents
 - React + Vite for frontend
 - Express + Prisma for backend

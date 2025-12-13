@@ -13,8 +13,8 @@ export interface WorkflowContext {
   projectId: string;
   phase: WorkflowPhase;
   onProgress?: (message: string) => void;
-  feedback?: string;  // User feedback for regeneration
-  previousMatrix?: string;  // Previous matrix content for context when regenerating
+  feedback?: string; // User feedback for regeneration
+  previousMatrix?: string; // Previous matrix content for context when regenerating
 }
 
 export class WorkflowEngineOptimized {
@@ -63,15 +63,21 @@ ${project.particularAngle || 'None specified'}
 DELIVERABLES REQUESTED:
 ${project.deliverables}
 
-${project.sourceMaterials.length > 0 ? `
+${
+  project.sourceMaterials.length > 0
+    ? `
 SOURCE MATERIALS PROVIDED:
 ${project.sourceMaterials.map((m) => `- ${m.filename} (${m.type})`).join('\n')}
 Strict Fidelity Required: ${project.strictFidelity}
 
 Note: Analyze these materials and incorporate their insights.
-` : 'No source materials provided - base content on research and best practices.'}
+`
+    : 'No source materials provided - base content on research and best practices.'
+}
 
-${(feedback && previousMatrix) ? `
+${
+  feedback && previousMatrix
+    ? `
 ⚠️ VIKTIGT - DETTA ÄR EN UPPDATERING AV EN BEFINTLIG MATRIS ⚠️
 
 BEFINTLIG MATRIS SOM SKA UPPDATERAS:
@@ -91,7 +97,9 @@ INSTRUKTIONER:
 4. Om användaren ber om att ta bort något (t.ex. "ta bort Codex"), se till att det INTE finns kvar någonstans i den nya matrisen
 5. Dubbelkolla att ändringarna faktiskt är implementerade innan du returnerar resultatet
 
-` : (feedback ? `
+`
+    : feedback
+      ? `
 ⚠️ VIKTIGT - ANVÄNDAREN HAR GETT FEEDBACK ⚠️
 Denna matris ska skapas baserat på följande feedback från användaren:
 
@@ -100,7 +108,9 @@ ${feedback}
 """
 
 Du MÅSTE implementera dessa önskemål i matrisen.
-` : '')}
+`
+      : ''
+}
 
 YOUR TASK:
 Create a complete Program Matrix for approval. This should include:
@@ -110,12 +120,16 @@ Create a complete Program Matrix for approval. This should include:
    - Current best practices
    - Recommended angle for this audience
 
-${project.sourceMaterials.length > 0 ? `
+${
+  project.sourceMaterials.length > 0
+    ? `
 2. **Source Material Insights** (150-200 words)
    - Key concepts from materials
    - Terminology to use
    - Examples to incorporate
-` : ''}
+`
+    : ''
+}
 
 3. **Program Structure**
    - 3-4 Chapters with clear themes
@@ -155,10 +169,14 @@ REGLER:
    - Theory-practice balance approach
    - Cognitive load management
 
-${project.deliverables.includes('quiz') || project.deliverables.includes('full_program') ? `
+${
+  project.deliverables.includes('quiz') || project.deliverables.includes('full_program')
+    ? `
 6. **Interactive Activities**
    - Suggest 1 activity per chapter
-` : ''}
+`
+    : ''
+}
 
 Keep the entire response focused and under 2000 words. Be specific and actionable.
 `;
@@ -242,15 +260,17 @@ Keep the entire response focused and under 2000 words. Be specific and actionabl
     const allChapters = project.chapters;
     const firstChapter = allChapters[0];
     const sessionIndex = session.chapter.sessions.findIndex((s: any) => s.id === sessionId);
-    const isFirstInProgram = isFirstArticle || (firstChapter?.id === session.chapterId && sessionIndex === 0);
-    const isFirstInChapter = isFirstInChapterOverride !== undefined 
-      ? isFirstInChapterOverride 
-      : sessionIndex === 0;
+    const isFirstInProgram =
+      isFirstArticle || (firstChapter?.id === session.chapterId && sessionIndex === 0);
+    const isFirstInChapter =
+      isFirstInChapterOverride !== undefined ? isFirstInChapterOverride : sessionIndex === 0;
 
     // Get previous sessions in same chapter with articles
     const previousSessionsInChapter = session.chapter.sessions
       .filter((s: any) => s.number < session.number && s.article)
-      .map((s: any) => `Session ${s.number}: ${s.name} - ${s.article?.content.substring(0, 200)}...`)
+      .map(
+        (s: any) => `Session ${s.number}: ${s.name} - ${s.article?.content.substring(0, 200)}...`
+      )
       .join('\n\n');
 
     onProgress?.(`📝 Creating article for Session ${session.number}: ${session.name}...`);
@@ -279,10 +299,14 @@ ${project.targetAudience}
 
 ${programDesign?.result ? `PROGRAM CONTEXT:\n${programDesign.result.substring(0, 1000)}...\n` : ''}
 
-${project.sourceMaterials.length > 0 ? `
-SOURCE MATERIALS: ${project.sourceMaterials.map(m => m.filename).join(', ')}
+${
+  project.sourceMaterials.length > 0
+    ? `
+SOURCE MATERIALS: ${project.sourceMaterials.map((m) => m.filename).join(', ')}
 ${project.strictFidelity ? 'STRICT FIDELITY REQUIRED - Follow sources exactly.' : 'Use sources for context and examples.'}
-` : ''}
+`
+    : ''
+}
 
 REQUIREMENTS:
 - 800-1500 words (prefer 1000-1200, but extend to 1500 if all necessary knowledge requires it)
@@ -294,7 +318,9 @@ REQUIREMENTS:
 - Proper source citations in academic format
 - **CRITICAL: State WIIFM (what reader will learn) early in opening (first 2 paragraphs)**
 
-${isFirstInProgram ? `
+${
+  isFirstInProgram
+    ? `
 ⭐ THIS IS THE FIRST ARTICLE IN THE ENTIRE PROGRAM - it must:
 - Welcome the reader to the training program "${project.name}"
 - Set expectations for the entire program
@@ -302,23 +328,33 @@ ${isFirstInProgram ? `
 - Create excitement and motivation
 - DO NOT reference previous sessions (there are none)
 - Example opening: "Welcome to ${project.name}. Over the next sessions, you'll learn..."
-` : ''}
+`
+    : ''
+}
 
-${isFirstInChapter && !isFirstInProgram ? `
+${
+  isFirstInChapter && !isFirstInProgram
+    ? `
 ⭐ THIS IS THE FIRST SESSION IN THIS CHAPTER - it must:
 - Introduce the chapter topic "${session.chapter.name}" and its importance
 - Explain what this chapter will cover overall
 - Set context for the chapter's learning journey
 - DO NOT reference previous sessions from other chapters
 - DO reference the overall program context if relevant
-` : ''}
+`
+    : ''
+}
 
-${previousSessionsInChapter ? `
+${
+  previousSessionsInChapter
+    ? `
 📚 CONTEXT - Previous sessions in this chapter:
 ${previousSessionsInChapter}
 
 IMPORTANT: Build on these previous sessions naturally. Reference what was learned and show progression. Make it clear how this session connects to previous ones in the chapter.
-` : ''}
+`
+    : ''
+}
 
 Create the complete article now.
 `;
@@ -391,7 +427,7 @@ Only report issues you cannot fix automatically.
     // Fact-checker now returns the corrected article, not just notes
     let correctedArticle = articleResult;
     let factCheckNotes = factCheck;
-    
+
     // Check if fact-checker returned a corrected article (look for article content before "---")
     const factCheckParts = factCheck.split('---');
     if (factCheckParts.length > 1 && factCheckParts[0].trim().length > 500) {
@@ -403,10 +439,10 @@ Only report issues you cannot fix automatically.
     // Step 4: Auto-revision if fact-checker made corrections
     if (correctedArticle !== articleResult) {
       onProgress?.('🔧 Applying fact-checker corrections...');
-      
+
       // Update article content with corrections
       articleResult = correctedArticle;
-      
+
       // Re-run HIST review on corrected article
       const histReviewUpdated = await agentOrchestrator.invokeAgent(
         'hist-compliance-editor',
@@ -414,7 +450,7 @@ Only report issues you cannot fix automatically.
         { article: correctedArticle },
         onProgress
       );
-      
+
       histReview = histReviewUpdated;
     }
 
@@ -437,16 +473,16 @@ Only report issues you cannot fix automatically.
           },
         })
       : await prisma.article.create({
-      data: {
-        sessionId,
+          data: {
+            sessionId,
             content: correctedArticle,
             wordCount: this.countWords(correctedArticle),
-        status: 'fact_check',
-        histReview,
+            status: 'fact_check',
+            histReview,
             factCheck: factCheckNotes,
-        approved: false,
-      },
-    });
+            approved: false,
+          },
+        });
 
     onProgress?.(
       `✅ Article complete! ${isFirstArticle ? 'Please approve the style before continuing.' : 'Ready for approval.'}`
@@ -467,9 +503,7 @@ Only report issues you cannot fix automatically.
    * Batch generate articles for ALL sessions in ALL chapters
    * After first article is approved, generate all remaining articles
    */
-  async executeBatchAllArticlesCreation(
-    context: WorkflowContext
-  ): Promise<any> {
+  async executeBatchAllArticlesCreation(context: WorkflowContext): Promise<any> {
     const { projectId, onProgress } = context;
 
     // Get all chapters with sessions
@@ -487,10 +521,14 @@ Only report issues you cannot fix automatically.
     });
 
     // Find all sessions without articles across all chapters
-    const allSessionsWithoutArticles: Array<{ chapterId: string; chapterNumber: number; session: any }> = [];
-    
-    chapters.forEach(chapter => {
-      chapter.sessions.forEach(session => {
+    const allSessionsWithoutArticles: Array<{
+      chapterId: string;
+      chapterNumber: number;
+      session: any;
+    }> = [];
+
+    chapters.forEach((chapter) => {
+      chapter.sessions.forEach((session) => {
         // Double-check: verify article doesn't exist in database
         // (session.article might be null even if article exists due to include issues)
         if (!session.article) {
@@ -500,25 +538,31 @@ Only report issues you cannot fix automatically.
             session,
           });
         } else {
-          console.log(`⏭️ Skipping session ${session.number} (${session.name}) - article already exists`);
+          console.log(
+            `⏭️ Skipping session ${session.number} (${session.name}) - article already exists`
+          );
         }
       });
     });
-    
-    console.log(`📊 Found ${allSessionsWithoutArticles.length} sessions without articles out of ${chapters.reduce((sum, c) => sum + c.sessions.length, 0)} total sessions`);
+
+    console.log(
+      `📊 Found ${allSessionsWithoutArticles.length} sessions without articles out of ${chapters.reduce((sum, c) => sum + c.sessions.length, 0)} total sessions`
+    );
 
     if (allSessionsWithoutArticles.length === 0) {
       onProgress?.('✅ All articles already exist across all chapters.');
-      return { 
-        message: 'All articles already exist', 
+      return {
+        message: 'All articles already exist',
         total: 0,
         created: 0,
         failed: 0,
-        results: []
+        results: [],
       };
     }
 
-    onProgress?.(`📚 Starting batch generation for ${allSessionsWithoutArticles.length} articles across ${chapters.length} chapters...`);
+    onProgress?.(
+      `📚 Starting batch generation for ${allSessionsWithoutArticles.length} articles across ${chapters.length} chapters...`
+    );
 
     const results: any[] = [];
     const firstChapter = chapters[0];
@@ -526,43 +570,50 @@ Only report issues you cannot fix automatically.
 
     for (const { chapterId, chapterNumber, session } of allSessionsWithoutArticles) {
       try {
-        const isFirstInProgram = firstChapter?.id === chapterId && 
-                                 firstChapter.sessions[0]?.id === session.id &&
-                                 articleIndex === 0;
-        
+        const isFirstInProgram =
+          firstChapter?.id === chapterId &&
+          firstChapter.sessions[0]?.id === session.id &&
+          articleIndex === 0;
+
         // Check if this is first in chapter
-        const chapter = chapters.find(c => c.id === chapterId);
-        const existingArticlesInChapter = chapter?.sessions.filter(s => s.article) || [];
-        const isFirstInChapter = existingArticlesInChapter.length === 0 && 
-                                 chapter?.sessions[0]?.id === session.id;
+        const chapter = chapters.find((c) => c.id === chapterId);
+        const existingArticlesInChapter = chapter?.sessions.filter((s) => s.article) || [];
+        const isFirstInChapter =
+          existingArticlesInChapter.length === 0 && chapter?.sessions[0]?.id === session.id;
 
         let retries = 3;
         let success = false;
-        
+
         while (retries > 0 && !success) {
           try {
             // Double-check article doesn't exist before creating
             const existingArticleCheck = await prisma.article.findUnique({
               where: { sessionId: session.id },
             });
-            
+
             if (existingArticleCheck) {
-              console.log(`⏭️ Skipping session ${session.number} - article already exists in database`);
-              onProgress?.(`⏭️ [${articleIndex + 1}/${allSessionsWithoutArticles.length}] Session ${session.number} already has an article, skipping...`);
-              results.push({ 
-                chapterId, 
-                sessionId: session.id, 
+              console.log(
+                `⏭️ Skipping session ${session.number} - article already exists in database`
+              );
+              onProgress?.(
+                `⏭️ [${articleIndex + 1}/${allSessionsWithoutArticles.length}] Session ${session.number} already has an article, skipping...`
+              );
+              results.push({
+                chapterId,
+                sessionId: session.id,
                 sessionNumber: session.number,
                 sessionName: session.name,
                 skipped: true,
-                message: 'Article already exists'
+                message: 'Article already exists',
               });
               articleIndex++;
               success = true;
               continue;
             }
 
-            onProgress?.(`📝 [${articleIndex + 1}/${allSessionsWithoutArticles.length}] Chapter ${chapterNumber}, Session ${session.number}: ${session.name}...`);
+            onProgress?.(
+              `📝 [${articleIndex + 1}/${allSessionsWithoutArticles.length}] Chapter ${chapterNumber}, Session ${session.number}: ${session.name}...`
+            );
 
             const result = await this.executeArticleCreation(
               context,
@@ -572,62 +623,74 @@ Only report issues you cannot fix automatically.
             );
 
             results.push({ chapterId, sessionId: session.id, ...result });
-            onProgress?.(`✅ [${articleIndex + 1}/${allSessionsWithoutArticles.length}] Article created successfully!`);
+            onProgress?.(
+              `✅ [${articleIndex + 1}/${allSessionsWithoutArticles.length}] Article created successfully!`
+            );
             success = true;
-            
+
             // Progressive delay - longer wait as we process more articles to avoid rate limits
-            const delay = Math.min(3000 + (articleIndex * 500), 10000); // 3-10 seconds
+            const delay = Math.min(3000 + articleIndex * 500, 10000); // 3-10 seconds
             if (articleIndex < allSessionsWithoutArticles.length - 1) {
-              onProgress?.(`⏳ Waiting ${delay/1000} seconds before next article...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
+              onProgress?.(`⏳ Waiting ${delay / 1000} seconds before next article...`);
+              await new Promise((resolve) => setTimeout(resolve, delay));
             }
-            
+
             articleIndex++;
           } catch (error: any) {
             retries--;
             const errorMessage = error.message || String(error);
             const errorStack = error.stack ? error.stack.substring(0, 500) : '';
-            const isRateLimit = errorMessage.includes('rate_limit') || 
-                               errorMessage.includes('429') || 
-                               errorMessage.includes('too many requests') ||
-                               error.status === 429 ||
-                               errorMessage.includes('rate limit');
-            
-            console.error(`❌ Error creating article for session ${session.id} (${retries} retries left):`, {
-              message: errorMessage,
-              stack: errorStack,
-              sessionNumber: session.number,
-              sessionName: session.name,
-              chapterNumber,
-              errorType: error.constructor?.name,
-              errorStatus: error.status,
-              errorCode: error.code,
-            });
-            
+            const isRateLimit =
+              errorMessage.includes('rate_limit') ||
+              errorMessage.includes('429') ||
+              errorMessage.includes('too many requests') ||
+              error.status === 429 ||
+              errorMessage.includes('rate limit');
+
+            console.error(
+              `❌ Error creating article for session ${session.id} (${retries} retries left):`,
+              {
+                message: errorMessage,
+                stack: errorStack,
+                sessionNumber: session.number,
+                sessionName: session.name,
+                chapterNumber,
+                errorType: error.constructor?.name,
+                errorStatus: error.status,
+                errorCode: error.code,
+              }
+            );
+
             if (retries > 0) {
               // If rate limited, wait much longer
               const retryDelay = isRateLimit ? 30000 : 10000; // 30 seconds for rate limit, 10 for other errors
-              onProgress?.(`⚠️ ${isRateLimit ? 'Rate limit detected' : 'Error occurred'}. Retrying in ${retryDelay/1000} seconds... (${retries} attempts remaining)`);
+              onProgress?.(
+                `⚠️ ${isRateLimit ? 'Rate limit detected' : 'Error occurred'}. Retrying in ${retryDelay / 1000} seconds... (${retries} attempts remaining)`
+              );
               onProgress?.(`   Error details: ${errorMessage.substring(0, 200)}`);
-              await new Promise(resolve => setTimeout(resolve, retryDelay));
+              await new Promise((resolve) => setTimeout(resolve, retryDelay));
             } else {
               const fullErrorMessage = `${errorMessage}${errorStack ? `\n   Stack: ${errorStack}` : ''}`;
-              onProgress?.(`❌ Failed to create article for Session ${session.number}: ${errorMessage}`);
+              onProgress?.(
+                `❌ Failed to create article for Session ${session.number}: ${errorMessage}`
+              );
               onProgress?.(`   Full error: ${fullErrorMessage.substring(0, 300)}`);
-              results.push({ 
-                chapterId, 
-                sessionId: session.id, 
+              results.push({
+                chapterId,
+                sessionId: session.id,
                 sessionNumber: session.number,
                 sessionName: session.name,
                 error: errorMessage,
-                errorDetails: errorStack
+                errorDetails: errorStack,
               });
               articleIndex++;
-              
+
               // If rate limited and no retries left, wait before continuing
               if (isRateLimit) {
-                onProgress?.(`⏸️ Rate limit reached. Waiting 30 seconds before continuing with next article...`);
-                await new Promise(resolve => setTimeout(resolve, 30000));
+                onProgress?.(
+                  `⏸️ Rate limit reached. Waiting 30 seconds before continuing with next article...`
+                );
+                await new Promise((resolve) => setTimeout(resolve, 30000));
               }
             }
           }
@@ -635,35 +698,43 @@ Only report issues you cannot fix automatically.
       } catch (outerError: any) {
         // Catch any errors that occur outside the retry loop (e.g., finding chapter, etc.)
         console.error(`❌ Outer error for session ${session?.id || 'unknown'}:`, outerError);
-        onProgress?.(`❌ Fatal error for Session ${session?.number || '?'}: ${outerError.message || String(outerError)}`);
-        results.push({ 
-          chapterId: chapterId || 'unknown', 
-          sessionId: session?.id || 'unknown', 
+        onProgress?.(
+          `❌ Fatal error for Session ${session?.number || '?'}: ${outerError.message || String(outerError)}`
+        );
+        results.push({
+          chapterId: chapterId || 'unknown',
+          sessionId: session?.id || 'unknown',
           sessionNumber: session?.number || '?',
           sessionName: session?.name || 'unknown',
           error: outerError.message || String(outerError),
-          fatal: true
+          fatal: true,
         });
         articleIndex++;
       }
     }
 
-    const createdCount = results.filter(r => !r.error && !r.skipped && !r.fatal).length;
-    const failedCount = results.filter(r => r.error || r.fatal).length;
-    const skippedCount = results.filter(r => r.skipped).length;
-    
-    onProgress?.(`✅ Batch generation complete! Created ${createdCount} articles, ${skippedCount} skipped, ${failedCount} failed.`);
-    
+    const createdCount = results.filter((r) => !r.error && !r.skipped && !r.fatal).length;
+    const failedCount = results.filter((r) => r.error || r.fatal).length;
+    const skippedCount = results.filter((r) => r.skipped).length;
+
+    onProgress?.(
+      `✅ Batch generation complete! Created ${createdCount} articles, ${skippedCount} skipped, ${failedCount} failed.`
+    );
+
     if (failedCount > 0) {
-      const failedSessions = results.filter(r => r.error || r.fatal).map(r => 
-        `  - Session ${r.sessionNumber || '?'}: ${r.error || r.message || 'Unknown error'}`
-      ).join('\n');
+      const failedSessions = results
+        .filter((r) => r.error || r.fatal)
+        .map(
+          (r) => `  - Session ${r.sessionNumber || '?'}: ${r.error || r.message || 'Unknown error'}`
+        )
+        .join('\n');
       onProgress?.(`\n❌ Failed sessions:\n${failedSessions}`);
-      console.error(`Batch generation completed with ${failedCount} failures:`, 
-        results.filter(r => r.error || r.fatal)
+      console.error(
+        `Batch generation completed with ${failedCount} failures:`,
+        results.filter((r) => r.error || r.fatal)
       );
     }
-    
+
     if (skippedCount > 0) {
       console.log(`Batch generation skipped ${skippedCount} sessions (articles already exist)`);
     }
@@ -680,10 +751,7 @@ Only report issues you cannot fix automatically.
    * Batch generate articles for all sessions in a chapter
    * After first article is approved, generate remaining articles
    */
-  async executeBatchArticleCreation(
-    context: WorkflowContext,
-    chapterId: string
-  ): Promise<any> {
+  async executeBatchArticleCreation(context: WorkflowContext, chapterId: string): Promise<any> {
     const { projectId, onProgress } = context;
 
     const chapter = await prisma.chapter.findUnique({
@@ -702,11 +770,11 @@ Only report issues you cannot fix automatically.
     if (!chapter) throw new Error('Chapter not found');
 
     // Find sessions without articles
-    const sessionsWithoutArticles = chapter.sessions.filter(s => !s.article);
+    const sessionsWithoutArticles = chapter.sessions.filter((s) => !s.article);
 
     console.log(`🔍 Chapter ${chapter.number} has ${chapter.sessions.length} total sessions`);
     console.log(`🔍 Sessions without articles: ${sessionsWithoutArticles.length}`);
-    chapter.sessions.forEach(s => {
+    chapter.sessions.forEach((s) => {
       console.log(`  - Session ${s.number}: ${s.name} - Article: ${s.article ? 'YES' : 'NO'}`);
     });
 
@@ -715,11 +783,12 @@ Only report issues you cannot fix automatically.
       return { message: 'All articles already exist', count: 0 };
     }
 
-    onProgress?.(`📚 Starting batch generation for ${sessionsWithoutArticles.length} articles in Chapter ${chapter.number}...`);
+    onProgress?.(
+      `📚 Starting batch generation for ${sessionsWithoutArticles.length} articles in Chapter ${chapter.number}...`
+    );
 
     const results = [];
     let isFirstInProgram = false;
-    let isFirstInChapter = false;
 
     // Check if this is the first chapter
     const allChapters = await prisma.chapter.findMany({
@@ -737,33 +806,32 @@ Only report issues you cannot fix automatically.
 
     for (let i = 0; i < sessionsWithoutArticles.length; i++) {
       const session = sessionsWithoutArticles[i];
-      
+
       // Determine if this is first in program or chapter
       // For batch, only first session in first chapter is "first in program"
-      isFirstInProgram = isFirstChapter && i === 0 && 
-                        firstChapter.sessions[0]?.id === session.id;
-      
+      isFirstInProgram = isFirstChapter && i === 0 && firstChapter.sessions[0]?.id === session.id;
+
       // First session in chapter is only if it's the first one we're processing
       // But we need to check if there are already articles in this chapter
-      const existingArticlesInChapter = chapter.sessions.filter(s => s.article);
-      isFirstInChapter = existingArticlesInChapter.length === 0 && i === 0;
+      const existingArticlesInChapter = chapter.sessions.filter((s) => s.article);
+      const _isFirstInChapter = existingArticlesInChapter.length === 0 && i === 0;
 
       try {
-        onProgress?.(`📝 [${i + 1}/${sessionsWithoutArticles.length}] Creating article for Session ${session.number}: ${session.name}...`);
-
-        const result = await this.executeArticleCreation(
-          context,
-          session.id,
-          isFirstInProgram
+        onProgress?.(
+          `📝 [${i + 1}/${sessionsWithoutArticles.length}] Creating article for Session ${session.number}: ${session.name}...`
         );
 
+        const result = await this.executeArticleCreation(context, session.id, isFirstInProgram);
+
         results.push(result);
-        onProgress?.(`✅ [${i + 1}/${sessionsWithoutArticles.length}] Article for Session ${session.number} created successfully!`);
-        
+        onProgress?.(
+          `✅ [${i + 1}/${sessionsWithoutArticles.length}] Article for Session ${session.number} created successfully!`
+        );
+
         // Small delay between articles to avoid rate limits
         if (i < sessionsWithoutArticles.length - 1) {
           onProgress?.(`⏳ Waiting 2 seconds before next article...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       } catch (error: any) {
         console.error(`Error creating article for session ${session.id}:`, error);
@@ -772,13 +840,15 @@ Only report issues you cannot fix automatically.
       }
     }
 
-    onProgress?.(`✅ Batch generation complete! Created ${results.filter(r => !r.error).length} articles.`);
+    onProgress?.(
+      `✅ Batch generation complete! Created ${results.filter((r) => !r.error).length} articles.`
+    );
 
     return {
       chapterId,
       total: sessionsWithoutArticles.length,
-      created: results.filter(r => !r.error).length,
-      failed: results.filter(r => r.error).length,
+      created: results.filter((r) => !r.error).length,
+      failed: results.filter((r) => r.error).length,
       results,
     };
   }
@@ -791,7 +861,7 @@ Only report issues you cannot fix automatically.
 
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
-      include: { 
+      include: {
         article: true,
         chapter: {
           include: {
@@ -848,30 +918,42 @@ ${session.wiifm}
 ARTICLE:
 ${session.article.content}
 
-${isFirstInProgram ? `
+${
+  isFirstInProgram
+    ? `
 ⭐ THIS IS THE FIRST VIDEO IN THE ENTIRE PROGRAM - it must:
 - Welcome the viewer to the training program "${project.name}"
 - Set expectations for the entire program
 - Explain the learning journey ahead
 - Create excitement and motivation
 - DO NOT reference previous sessions (there are none)
-` : ''}
+`
+    : ''
+}
 
-${isFirstInChapter && !isFirstInProgram ? `
+${
+  isFirstInChapter && !isFirstInProgram
+    ? `
 ⭐ THIS IS THE FIRST SESSION IN THIS CHAPTER - it must:
 - Introduce the chapter topic "${session.chapter.name}" and its importance
 - Explain what this chapter will cover overall
 - Set context for the chapter's learning journey
 - DO NOT reference previous sessions from other chapters
 - DO reference the overall program context if relevant
-` : ''}
+`
+    : ''
+}
 
-${previousSessionsInChapter ? `
+${
+  previousSessionsInChapter
+    ? `
 📚 CONTEXT - Previous sessions in this chapter:
 ${previousSessionsInChapter}
 
 IMPORTANT: Build on these previous sessions naturally. Reference what was learned and show progression. Make it clear how this session connects to previous ones in the chapter.
-` : ''}
+`
+    : ''
+}
 
 CRITICAL REQUIREMENTS:
 - Exactly 240-260 words
@@ -908,13 +990,13 @@ CRITICAL REQUIREMENTS:
           },
         })
       : await prisma.videoScript.create({
-      data: {
-        sessionId,
-        content: videoResult,
-        wordCount: this.countWords(videoResult),
-        approved: false,
-      },
-    });
+          data: {
+            sessionId,
+            content: videoResult,
+            wordCount: this.countWords(videoResult),
+            approved: false,
+          },
+        });
 
     onProgress?.(`✅ Video script complete!`);
 
@@ -924,9 +1006,7 @@ CRITICAL REQUIREMENTS:
   /**
    * Batch generate video scripts for all sessions with articles
    */
-  async executeBatchVideoCreation(
-    context: WorkflowContext
-  ): Promise<any> {
+  async executeBatchVideoCreation(context: WorkflowContext): Promise<any> {
     const { projectId, onProgress } = context;
 
     // Get all sessions with articles but without video scripts
@@ -940,10 +1020,7 @@ CRITICAL REQUIREMENTS:
         article: true,
         chapter: true,
       },
-      orderBy: [
-        { chapter: { number: 'asc' } },
-        { number: 'asc' },
-      ],
+      orderBy: [{ chapter: { number: 'asc' } }, { number: 'asc' }],
     });
 
     if (sessions.length === 0) {
@@ -957,30 +1034,36 @@ CRITICAL REQUIREMENTS:
 
     for (let i = 0; i < sessions.length; i++) {
       const session = sessions[i];
-      
+
       try {
-        onProgress?.(`🎬 [${i + 1}/${sessions.length}] Creating video script for Session ${session.number}: ${session.name}...`);
+        onProgress?.(
+          `🎬 [${i + 1}/${sessions.length}] Creating video script for Session ${session.number}: ${session.name}...`
+        );
 
         const result = await this.executeVideoCreation(context, session.id);
         results.push({ sessionId: session.id, ...result });
         onProgress?.(`✅ [${i + 1}/${sessions.length}] Video script created successfully!`);
-        
+
         if (i < sessions.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       } catch (error: any) {
         console.error(`Error creating video script for session ${session.id}:`, error);
-        onProgress?.(`❌ Failed to create video script for Session ${session.number}: ${error.message}`);
+        onProgress?.(
+          `❌ Failed to create video script for Session ${session.number}: ${error.message}`
+        );
         results.push({ sessionId: session.id, error: error.message });
       }
     }
 
-    onProgress?.(`✅ Batch video generation complete! Created ${results.filter(r => !r.error).length} video scripts.`);
+    onProgress?.(
+      `✅ Batch video generation complete! Created ${results.filter((r) => !r.error).length} video scripts.`
+    );
 
     return {
       total: sessions.length,
-      created: results.filter(r => !r.error).length,
-      failed: results.filter(r => r.error).length,
+      created: results.filter((r) => !r.error).length,
+      failed: results.filter((r) => r.error).length,
       results,
     };
   }
@@ -988,7 +1071,11 @@ CRITICAL REQUIREMENTS:
   /**
    * OPTIMIZED Phase 4: Quiz Creation (only if requested)
    */
-  async executeQuizCreation(context: WorkflowContext, sessionId: string, numQuestions: number = 3): Promise<any> {
+  async executeQuizCreation(
+    context: WorkflowContext,
+    sessionId: string,
+    numQuestions: number = 3
+  ): Promise<any> {
     const { projectId, onProgress } = context;
 
     const session = await prisma.session.findUnique({
@@ -1034,12 +1121,15 @@ Requirements:
 
     // Parse quiz questions from the result (simplified parsing)
     // The result should be a table with: Fråga | a | b | c | Rätt svar
-    const questionLines = quizResult.split('\n').filter(line => line.includes('|'));
+    const questionLines = quizResult.split('\n').filter((line) => line.includes('|'));
     const questions = [];
 
     for (const line of questionLines) {
       if (line.trim().startsWith('|') && !line.includes('Fråga')) {
-        const parts = line.split('|').map(p => p.trim()).filter(p => p);
+        const parts = line
+          .split('|')
+          .map((p) => p.trim())
+          .filter((p) => p);
         if (parts.length >= 5) {
           questions.push({
             question: parts[0],
@@ -1064,7 +1154,7 @@ Requirements:
       await prisma.quizQuestion.deleteMany({
         where: { quizId: existingQuiz.id },
       });
-      
+
       quiz = await prisma.quiz.update({
         where: { sessionId },
         data: {
@@ -1073,11 +1163,11 @@ Requirements:
       });
     } else {
       quiz = await prisma.quiz.create({
-      data: {
-        sessionId,
-        approved: false,
-      },
-    });
+        data: {
+          sessionId,
+          approved: false,
+        },
+      });
     }
 
     // Create quiz questions
@@ -1102,10 +1192,7 @@ Requirements:
   /**
    * Batch generate quizzes for all sessions with articles
    */
-  async executeBatchQuizCreation(
-    context: WorkflowContext,
-    numQuestions: number = 3
-  ): Promise<any> {
+  async executeBatchQuizCreation(context: WorkflowContext, numQuestions: number = 3): Promise<any> {
     const { projectId, onProgress } = context;
 
     // Get project to find numQuestions
@@ -1126,10 +1213,7 @@ Requirements:
         article: true,
         chapter: true,
       },
-      orderBy: [
-        { chapter: { number: 'asc' } },
-        { number: 'asc' },
-      ],
+      orderBy: [{ chapter: { number: 'asc' } }, { number: 'asc' }],
     });
 
     if (sessions.length === 0) {
@@ -1143,16 +1227,18 @@ Requirements:
 
     for (let i = 0; i < sessions.length; i++) {
       const session = sessions[i];
-      
+
       try {
-        onProgress?.(`🎯 [${i + 1}/${sessions.length}] Creating quiz for Session ${session.number}: ${session.name}...`);
+        onProgress?.(
+          `🎯 [${i + 1}/${sessions.length}] Creating quiz for Session ${session.number}: ${session.name}...`
+        );
 
         const result = await this.executeQuizCreation(context, session.id, questionsPerQuiz);
         results.push({ sessionId: session.id, ...result });
         onProgress?.(`✅ [${i + 1}/${sessions.length}] Quiz created successfully!`);
-        
+
         if (i < sessions.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       } catch (error: any) {
         console.error(`Error creating quiz for session ${session.id}:`, error);
@@ -1161,18 +1247,25 @@ Requirements:
       }
     }
 
-    onProgress?.(`✅ Batch quiz generation complete! Created ${results.filter(r => !r.error).length} quizzes.`);
+    onProgress?.(
+      `✅ Batch quiz generation complete! Created ${results.filter((r) => !r.error).length} quizzes.`
+    );
 
     return {
       total: sessions.length,
-      created: results.filter(r => !r.error).length,
-      failed: results.filter(r => r.error).length,
+      created: results.filter((r) => !r.error).length,
+      failed: results.filter((r) => r.error).length,
       results,
     };
   }
 
   // Helper methods
-  private async createWorkflowStep(projectId: string, phase: string, step: string, agentName: string) {
+  private async createWorkflowStep(
+    projectId: string,
+    phase: string,
+    step: string,
+    agentName: string
+  ) {
     return prisma.workflowStep.create({
       data: { projectId, phase, step, agentName, status: 'in_progress' },
     });
@@ -1203,13 +1296,17 @@ Requirements:
     const chaptersMap = new Map<number, { name: string; theme: string; sessions: any[] }>();
 
     // Split by table rows (lines starting with |)
-    const lines = matrixResult.split('\n').filter(line => line.trim().startsWith('|') && !line.includes('---'));
-    
+    const lines = matrixResult
+      .split('\n')
+      .filter((line) => line.trim().startsWith('|') && !line.includes('---'));
+
     let currentChapter: { num: number; name: string; theme: string } | null = null;
 
     for (const line of lines) {
       // Try to match chapter row: | **Kapitel/Chapter N: Name**<br><br>*Tema/Theme: ...* | ...
-      const chapterMatch = line.match(/\|\s*\*\*(?:Kapitel|Chapter)\s+(\d+):\s*([^*<]+)(?:<br><br>\*(?:Tema|Theme):\s*([^*]+)\*)?/i);
+      const chapterMatch = line.match(
+        /\|\s*\*\*(?:Kapitel|Chapter)\s+(\d+):\s*([^*<]+)(?:<br><br>\*(?:Tema|Theme):\s*([^*]+)\*)?/i
+      );
 
       if (chapterMatch) {
         const chapterNum = parseInt(chapterMatch[1]);
@@ -1229,21 +1326,26 @@ Requirements:
 
       // Try to match session row: | **Session N.M: Name**<br><br>Description | ... | ... |
       // Also handle empty chapter cell: |  | **Session N.M: Name** | ... |
-      const sessionMatch = line.match(/\|\s*(?:\*\*(?:Kapitel|Chapter)[^|]*\*\*[^|]*\||[^|]*)\|\s*\*\*Session\s+([\d.]+):\s*([^*<]+)(?:<br><br>([^|]*))?/i);
-      
+      const sessionMatch = line.match(
+        /\|\s*(?:\*\*(?:Kapitel|Chapter)[^|]*\*\*[^|]*\||[^|]*)\|\s*\*\*Session\s+([\d.]+):\s*([^*<]+)(?:<br><br>([^|]*))?/i
+      );
+
       if (sessionMatch && currentChapter) {
         const sessionNum = sessionMatch[1].trim();
         const sessionName = sessionMatch[2].trim();
         const sessionDesc = sessionMatch[3] ? sessionMatch[3].trim() : '';
-        
+
         // Extract WIIFM from the last column if available
-        const columns = line.split('|').map(c => c.trim()).filter(c => c);
+        const columns = line
+          .split('|')
+          .map((c) => c.trim())
+          .filter((c) => c);
         const wiifm = columns.length >= 4 ? columns[columns.length - 1] : sessionDesc;
 
         chaptersMap.get(currentChapter.num)!.sessions.push({
-        number: sessionNum,
-        name: sessionName,
-        description: sessionDesc,
+          number: sessionNum,
+          name: sessionName,
+          description: sessionDesc,
           wiifm: wiifm,
         });
       }
@@ -1253,13 +1355,15 @@ Requirements:
     console.log(`📊 Parsed ${chaptersMap.size} chapters:`);
     for (const [num, data] of chaptersMap.entries()) {
       console.log(`  Chapter ${num}: ${data.name} - ${data.sessions.length} sessions`);
-      data.sessions.forEach(s => {
+      data.sessions.forEach((s) => {
         console.log(`    - Session ${s.number}: ${s.name}`);
       });
     }
 
     // Create chapters and sessions in database
-    for (const [chapterNum, chapterData] of Array.from(chaptersMap.entries()).sort((a, b) => a[0] - b[0])) {
+    for (const [chapterNum, chapterData] of Array.from(chaptersMap.entries()).sort(
+      (a, b) => a[0] - b[0]
+    )) {
       const chapter = await prisma.chapter.create({
         data: {
           projectId,

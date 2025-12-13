@@ -3,7 +3,6 @@ import { supabaseAdmin } from '../lib/supabase';
 import prisma from '../db/client';
 
 // Extend Express Request type to include user
-// eslint-disable-next-line @typescript-eslint/no-namespace
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
@@ -21,11 +20,7 @@ declare global {
  * Authentication middleware
  * Validates Supabase JWT token and attaches user to request
  */
-export async function authMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
@@ -36,7 +31,10 @@ export async function authMiddleware(
     const token = authHeader.replace('Bearer ', '');
 
     // Verify token with Supabase
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    const {
+      data: { user },
+      error,
+    } = await supabaseAdmin.auth.getUser(token);
 
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid or expired token' });
@@ -77,11 +75,7 @@ export async function authMiddleware(
  * Optional auth middleware
  * Attaches user if token present, but doesn't require it
  */
-export async function optionalAuthMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
@@ -90,7 +84,10 @@ export async function optionalAuthMiddleware(
 
   try {
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    const {
+      data: { user },
+      error,
+    } = await supabaseAdmin.auth.getUser(token);
 
     if (!error && user) {
       const dbUser = await prisma.user.findUnique({
@@ -105,7 +102,7 @@ export async function optionalAuthMiddleware(
         };
       }
     }
-  } catch (error) {
+  } catch {
     // Silently continue without user
   }
 
@@ -115,11 +112,7 @@ export async function optionalAuthMiddleware(
 /**
  * Middleware to check if user owns a project
  */
-export async function requireProjectOwner(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function requireProjectOwner(req: Request, res: Response, next: NextFunction) {
   const projectId = req.params.projectId || req.params.id;
 
   if (!projectId) {

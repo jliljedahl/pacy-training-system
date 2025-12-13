@@ -13,6 +13,7 @@ Tre Agent Skills har skapats för att göra article-writer agenten ännu vassare
 ## Var finns Skills?
 
 Skills finns i `.claude/skills/` mappen:
+
 ```
 .claude/skills/
 ├── article-writing-excellence/
@@ -26,6 +27,7 @@ Skills finns i `.claude/skills/` mappen:
 ## Hur fungerar Agent Skills?
 
 Agent Skills är **model-invoked** - Claude bestämmer automatiskt när de ska användas baserat på:
+
 - Din förfrågan
 - Skill-beskrivningen (description field)
 - Kontexten i samtalet
@@ -35,18 +37,21 @@ Du behöver **inte** explicit anropa Skills - de aktiveras automatiskt när rele
 ## Skill 1: Article Writing Excellence
 
 **När används den:**
+
 - När article-writer agenten skriver artiklar
 - När innehåll behöver förbättras
 - När ordantal måste hållas under kontroll
 - När läsar-engagement behöver ökas
 
 **Vad den ger:**
+
 - Avancerade narrativa tekniker
 - Ord-ekonomi strategier
 - Läsar-engagement tekniker
 - Checklistor för kvalitetskontroll
 
 **Huvudsakliga tekniker:**
+
 - Word economy: Varje ord måste förtjäna sin plats
 - Narrative momentum: Behåll läsarens uppmärksamhet
 - Reader engagement: Direkt addressering, konkreta exempel
@@ -55,18 +60,21 @@ Du behöver **inte** explicit anropa Skills - de aktiveras automatiskt när rele
 ## Skill 2: Narrative Momentum
 
 **När används den:**
+
 - När artiklar känns platta eller tråkiga
 - När innehåll förlorar läsarens uppmärksamhet
 - När flödet mellan sektioner behöver förbättras
 - När öppningar och avslutningar behöver mer kraft
 
 **Vad den ger:**
+
 - Hook-tekniker för öppningar
 - Övergångar mellan sektioner
 - Tekniker för att bygga "aha moments"
 - Momentum i avslutningar
 
 **Huvudsakliga tekniker:**
+
 - Opening hooks: Surprising insight, relatable scenario, provocative question
 - Section transitions: Question bridge, insight connection, example continuation
 - Building to insights: Progressive revelation
@@ -75,17 +83,20 @@ Du behöver **inte** explicit anropa Skills - de aktiveras automatiskt när rele
 ## Skill 3: Word Economy Mastery
 
 **När används den:**
+
 - När artiklar överskrider ordgränser (800-1200 ord)
 - När skrivandet behöver bli mer koncist
 - När texten behöver bli tightare och mer fokuserad
 
 **Vad den ger:**
+
 - Systematiska reduktionsstrategier
 - Vanliga redundanser att eliminera
 - Process för att minska ordantal
 - Quick reference för vanliga klipp
 
 **Huvudsakliga tekniker:**
+
 - Eliminera redundans: "in order to" → "to"
 - Aktiv röst: Kortare och tydligare
 - Ersätt fraser med ord: "a large number of" → "many"
@@ -104,18 +115,21 @@ Article-writer agenten (`.claude/agents/article-writer.md`) kommer automatiskt a
 ## Exempel på användning
 
 ### Scenario 1: Artikel överskrider ordgräns
+
 ```
 User: "Skriv en artikel om X, max 1000 ord"
 Claude: [Aktiverar word-economy-mastery automatiskt]
 ```
 
 ### Scenario 2: Artikel känns platt
+
 ```
 User: "Denna artikel känns tråkig, kan du göra den mer engagerande?"
 Claude: [Aktiverar narrative-momentum automatiskt]
 ```
 
 ### Scenario 3: Förbättra artikel-kvalitet
+
 ```
 User: "Skriv en artikel om Y med hög kvalitet"
 Claude: [Aktiverar article-writing-excellence automatiskt]
@@ -124,11 +138,13 @@ Claude: [Aktiverar article-writing-excellence automatiskt]
 ## Best Practices
 
 ### För utvecklare
+
 1. **Låt Skills vara model-invoked**: De aktiveras automatiskt när relevant
 2. **Uppdatera descriptions**: Om Skills inte aktiveras, gör descriptions mer specifika
 3. **Testa med konkreta exempel**: "Skriv artikel om X" kommer att aktivera relevanta Skills
 
 ### För article-writer agenten
+
 1. **Referera till Skills i prompts**: "Use word economy techniques when approaching limits"
 2. **Använd Skills-checklistor**: Verifiera att artikel följer principerna
 3. **Kombinera Skills**: Använd flera Skills tillsammans för bästa resultat
@@ -136,17 +152,20 @@ Claude: [Aktiverar article-writing-excellence automatiskt]
 ## Ytterligare förbättringar
 
 ### Framtida Skills-förslag
+
 1. **source-integration-excellence**: Förbättra hur källor integreras naturligt
 2. **audience-adaptation**: Anpassa ton och exempel för specifik målgrupp
 3. **hist-compliance-checker**: Automatisk verifiering av HIST-principer
 
 ### Uppdatering av article-writer agent
+
 Överväg att uppdatera `.claude/agents/article-writer.md` för att explicit referera till Skills:
 
 ```markdown
 ## Using Agent Skills
 
 When writing articles, these Skills are available:
+
 - **article-writing-excellence**: For overall writing quality
 - **narrative-momentum**: For maintaining reader engagement
 - **word-economy-mastery**: For staying within word limits
@@ -165,6 +184,7 @@ För att testa Skills:
 ## Support
 
 Om Skills inte aktiveras:
+
 1. Kontrollera att Skills finns i `.claude/skills/`
 2. Verifiera YAML frontmatter är korrekt
 3. Gör descriptions mer specifika
@@ -175,4 +195,3 @@ Om Skills inte aktiveras:
 - [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills)
 - Article Writer Agent: `.claude/agents/article-writer.md`
 - Skills: `.claude/skills/`
-

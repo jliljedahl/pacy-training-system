@@ -27,6 +27,7 @@ You are the [Role] for Pacy's HIST-based training system. Your responsibility is
 ## INPUT FORMAT
 
 What the agent expects to receive:
+
 - Item 1
 - Item 2
 
@@ -36,7 +37,7 @@ What the agent should produce (use JSON for structured output):
 
 \`\`\`json
 {
-  "field": "value"
+"field": "value"
 }
 \`\`\`
 

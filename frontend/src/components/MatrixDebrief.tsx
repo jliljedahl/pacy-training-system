@@ -46,11 +46,15 @@ export default function MatrixDebrief({
   };
 
   // Get matrix content from workflow steps (use the LATEST one, not the first)
-  const matrixWorkflowSteps = project.workflowSteps
-    ?.filter((s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design') || [];
-  const matrixContent = matrixWorkflowSteps.length > 0
-    ? matrixWorkflowSteps[matrixWorkflowSteps.length - 1]?.result || 'Matrisen har inte skapats an...'
-    : 'Matrisen har inte skapats an...';
+  const matrixWorkflowSteps =
+    project.workflowSteps?.filter(
+      (s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design'
+    ) || [];
+  const matrixContent =
+    matrixWorkflowSteps.length > 0
+      ? matrixWorkflowSteps[matrixWorkflowSteps.length - 1]?.result ||
+        'Matrisen har inte skapats an...'
+      : 'Matrisen har inte skapats an...';
 
   // Handle chat messages
   const handleSendMessage = async (message: string): Promise<string> => {
@@ -95,9 +99,12 @@ export default function MatrixDebrief({
 
         {/* Simple Matrix View */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{
-            __html: matrixContent.replace(/\n/g, '<br/>')
-          }} />
+          <div
+            className="prose max-w-none"
+            dangerouslySetInnerHTML={{
+              __html: matrixContent.replace(/\n/g, '<br/>'),
+            }}
+          />
         </div>
       </div>
     );

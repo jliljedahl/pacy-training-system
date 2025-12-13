@@ -57,7 +57,7 @@ anthropic.messages
   })
   .catch((error: any) => {
     console.error('❌ ERROR: API key test failed\n');
-    
+
     if (error.status === 401 || error.status === 403) {
       console.error('🔐 Authentication Error:');
       console.error('   Your API key is invalid or expired.');
@@ -73,7 +73,6 @@ anthropic.messages
       console.error(`   Status: ${error.status || 'Unknown'}`);
       console.error(`   Message: ${error.message || 'Unknown error'}\n`);
     }
-    
+
     process.exit(1);
   });
-

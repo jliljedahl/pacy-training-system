@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { workflowEngine } from '../services/workflowEngine';
 import { workflowEngineOptimized } from '../services/workflowEngineOptimized';
 import { debriefWorkflowService } from '../services/debriefWorkflow';
 import prisma from '../db/client';
@@ -28,10 +27,7 @@ router.get('/projects/:projectId/debrief/start', async (req, res, next) => {
 
     try {
       // Step 1: Execute initial research
-      const researchResult = await debriefWorkflowService.executeResearch(
-        projectId,
-        sendProgress
-      );
+      const researchResult = await debriefWorkflowService.executeResearch(projectId, sendProgress);
 
       // Step 1.5: Validate research - check for contradictions, gaps, and contrarian views
       const { validatedResearch, validation } = await debriefWorkflowService.validateResearch(
@@ -82,7 +78,7 @@ router.get('/projects/:projectId/debrief', async (req, res, next) => {
     try {
       const debrief = JSON.parse(debriefStep.result);
       res.json(debrief);
-    } catch (e) {
+    } catch {
       res.json({ fullDebrief: debriefStep.result });
     }
   } catch (error) {
@@ -184,7 +180,7 @@ router.post('/projects/:projectId/debrief/approve', async (req, res, next) => {
     res.json({
       message: 'Debrief approved',
       nextStep: 'matrix_creation',
-      selectedAlternative
+      selectedAlternative,
     });
   } catch (error) {
     next(error);
@@ -211,7 +207,7 @@ router.get('/projects/:projectId/matrix/create', async (req, res, next) => {
     if (project.status !== 'matrix_creation') {
       return res.status(400).json({
         error: 'Debrief must be approved before creating matrix',
-        currentStatus: project.status
+        currentStatus: project.status,
       });
     }
 
@@ -224,16 +220,6 @@ router.get('/projects/:projectId/matrix/create', async (req, res, next) => {
     };
 
     try {
-      // Get approved debrief to use as context
-      const debriefStep = await prisma.workflowStep.findFirst({
-        where: { projectId, step: 'approve_debrief' },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      const selectedAlternative = debriefStep?.result
-        ? JSON.parse(debriefStep.result).selectedAlternative
-        : 'A';
-
       // Use optimized workflow with debrief context
       const result = await workflowEngineOptimized.executeProgramDesign({
         projectId,
@@ -273,7 +259,7 @@ router.post('/projects/:projectId/matrix/feedback', async (req, res, next) => {
         step: 'matrix_feedback',
         agentName: 'user',
         status: 'completed',
-        
+
         completedAt: new Date(),
         result: JSON.stringify({ feedback }),
       },
@@ -284,7 +270,7 @@ router.post('/projects/:projectId/matrix/feedback', async (req, res, next) => {
 
     res.json({
       acknowledged: true,
-      message: acknowledgment
+      message: acknowledgment,
     });
   } catch (error) {
     next(error);
@@ -315,7 +301,7 @@ router.post('/projects/:projectId/matrix/regenerate', async (req, res, next) => 
       const previousMatrixStep = await prisma.workflowStep.findFirst({
         where: {
           projectId,
-          step: { in: ['create_program_matrix', 'create_program_design'] }
+          step: { in: ['create_program_matrix', 'create_program_design'] },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -343,7 +329,7 @@ router.post('/projects/:projectId/matrix/regenerate', async (req, res, next) => 
       await prisma.workflowStep.deleteMany({
         where: {
           projectId,
-          step: { in: ['create_program_matrix', 'create_program_design'] }
+          step: { in: ['create_program_matrix', 'create_program_design'] },
         },
       });
 
@@ -367,7 +353,7 @@ router.post('/projects/:projectId/matrix/regenerate', async (req, res, next) => 
         phase: 'program_design',
         onProgress: sendProgress,
         feedback: feedback,
-        previousMatrix: previousMatrixContent,  // Include previous matrix for context
+        previousMatrix: previousMatrixContent, // Include previous matrix for context
       });
 
       res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
@@ -548,15 +534,19 @@ router.get('/projects/:projectId/articles/batch-all', async (req, res, next) => 
     try {
       sendProgress('🚀 Starting batch generation...');
       console.log(`[Batch Articles] Starting batch generation for project ${projectId}`);
-      
+
       const result = await workflowEngineOptimized.executeBatchAllArticlesCreation({
         projectId,
         phase: 'article_creation',
         onProgress: sendProgress,
       });
 
-      console.log(`[Batch Articles] Completed: ${result.created || 0} created, ${result.failed || 0} failed`);
-      sendProgress(`✅ Batch generation completed! Created ${result.created || 0} articles, ${result.failed || 0} failed.`);
+      console.log(
+        `[Batch Articles] Completed: ${result.created || 0} created, ${result.failed || 0} failed`
+      );
+      sendProgress(
+        `✅ Batch generation completed! Created ${result.created || 0} articles, ${result.failed || 0} failed.`
+      );
       res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
       res.end();
     } catch (error: any) {
@@ -568,20 +558,22 @@ router.get('/projects/:projectId/articles/batch-all', async (req, res, next) => 
         errorStatus: error.status,
         errorCode: error.code,
       });
-      
+
       const errorMessage = error.message || 'Unknown error occurred during batch generation';
       const errorStack = error.stack ? `\n\nStack: ${error.stack.substring(0, 500)}` : '';
-      
+
       try {
         sendProgress(`❌ Batch generation failed: ${errorMessage}${errorStack}`);
-        res.write(`data: ${JSON.stringify({ type: 'error', message: errorMessage, details: errorStack })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({ type: 'error', message: errorMessage, details: errorStack })}\n\n`
+        );
         res.end();
       } catch (sendError) {
         console.error('[Batch Articles] Failed to send error to client:', sendError);
         // Connection might be closed, try to end response
         try {
           res.end();
-        } catch (e) {
+        } catch {
           // Ignore
         }
       }
@@ -931,8 +923,10 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
 
       for (let i = 0; i < chapter.sessions.length; i++) {
         const session = chapter.sessions[i];
-        
-        sendProgress(`📚 [${i + 1}/${chapter.sessions.length}] Processing Session ${session.number}: ${session.name}...`);
+
+        sendProgress(
+          `📚 [${i + 1}/${chapter.sessions.length}] Processing Session ${session.number}: ${session.name}...`
+        );
 
         const sessionResult: any = { sessionId: session.id, sessionNumber: session.number };
 
@@ -950,7 +944,7 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
               false
             );
             sessionResult.article = articleResult;
-            
+
             // Apply feedback if available
             if (articleFeedback) {
               await prisma.article.update({
@@ -976,7 +970,7 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
               session.id
             );
             sessionResult.video = videoResult;
-            
+
             // Apply feedback if available
             if (videoFeedback) {
               await prisma.videoScript.update({
@@ -1003,7 +997,7 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
               chapter.project.quizQuestions || 3
             );
             sessionResult.quiz = quizResult;
-            
+
             // Apply feedback if available
             if (quizFeedback) {
               await prisma.quiz.update({
@@ -1017,16 +1011,18 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
         }
 
         results.push(sessionResult);
-        
+
         // Delay between sessions
         if (i < chapter.sessions.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
 
       sendProgress(`✅ Chapter batch generation complete!`);
 
-      res.write(`data: ${JSON.stringify({ type: 'complete', result: { chapterId, results } })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ type: 'complete', result: { chapterId, results } })}\n\n`
+      );
       res.end();
     } catch (error: any) {
       res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
@@ -1100,7 +1096,9 @@ router.post('/videos/:videoId/approve', async (req, res, next) => {
 router.get('/projects/:projectId/quizzes/batch', async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    const numQuestions = req.query.numQuestions ? parseInt(req.query.numQuestions as string) : undefined;
+    const numQuestions = req.query.numQuestions
+      ? parseInt(req.query.numQuestions as string)
+      : undefined;
 
     const project = await prisma.project.findUnique({
       where: { id: projectId },

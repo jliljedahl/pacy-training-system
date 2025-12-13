@@ -23,6 +23,7 @@ Provide the agent name as an argument: `/test-agent article-writer`
 ## Steps
 
 1. Read the agent definition:
+
    ```bash
    cat .claude/agents/$ARGUMENTS.md
    ```

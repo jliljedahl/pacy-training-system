@@ -13,6 +13,7 @@ You analyze company websites to extract relevant context for creating training p
 Given a company URL, thoroughly analyze the website and extract:
 
 ### 1. Company Overview
+
 - **Name**: Official company name
 - **Industry**: Primary industry classification
 - **Description**: 2-3 sentence overview of what they do
@@ -20,17 +21,20 @@ Given a company URL, thoroughly analyze the website and extract:
 - **Geographic focus**: Global, regional, or local
 
 ### 2. Brand Voice & Communication
+
 - **Tone**: Professional, casual, technical, friendly, authoritative
 - **Key themes**: What messages do they emphasize?
 - **Communication style**: How do they talk to their audience?
 - **Language**: Primary language(s) used
 
 ### 3. Target Audience Indicators
+
 - **Business model**: B2B, B2C, or both
 - **Customer segments**: Who do they serve?
 - **Typical roles**: What roles would interact with their products/services?
 
 ### 4. Training-Relevant Context
+
 - **Industry terminology**: Key terms used in their space
 - **Values/culture**: Company values if visible
 - **Learning focus**: Any visible L&D or training emphasis
@@ -74,9 +78,7 @@ Return ONLY valid JSON (no explanation before or after):
     "relevantTerminology": ["term1", "term2", "term3"],
     "industryContext": "Brief description of industry context",
     "companyValues": ["value1", "value2"],
-    "suggestedAngles": [
-      "Training angle that would resonate with this company"
-    ]
+    "suggestedAngles": ["Training angle that would resonate with this company"]
   },
   "confidence": {
     "overall": "high|medium|low",
@@ -84,13 +86,8 @@ Return ONLY valid JSON (no explanation before or after):
     "audienceInfo": "high|medium|low",
     "brandVoice": "high|medium|low"
   },
-  "notes": [
-    "Any important observations",
-    "Suggestions for follow-up questions"
-  ],
-  "suggestedFollowUp": [
-    "Question to ask user for clarification"
-  ]
+  "notes": ["Any important observations", "Suggestions for follow-up questions"],
+  "suggestedFollowUp": ["Question to ask user for clarification"]
 }
 ```
 

@@ -32,6 +32,7 @@ datasource db {
 ### 3. Update Environment Variables
 
 **backend/.env:**
+
 ```
 DATABASE_URL="postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres"
@@ -40,6 +41,7 @@ SUPABASE_SERVICE_KEY="eyJ..."
 ```
 
 **frontend/.env:**
+
 ```
 VITE_SUPABASE_URL="https://[ref].supabase.co"
 VITE_SUPABASE_ANON_KEY="eyJ..."
@@ -55,6 +57,7 @@ npx prisma migrate dev --name init_supabase
 ### 5. Configure Storage Bucket
 
 In Supabase Dashboard:
+
 1. Go to Storage
 2. Create bucket: `source-materials`
 3. Set policies for authenticated access
@@ -62,6 +65,7 @@ In Supabase Dashboard:
 ### 6. Enable Auth (Optional)
 
 In Supabase Dashboard:
+
 1. Go to Authentication > Providers
 2. Enable Email/Password
 3. Configure redirect URLs
@@ -79,6 +83,7 @@ curl http://localhost:3001/api/projects
 ## Rollback
 
 To revert to SQLite, change schema.prisma back:
+
 ```prisma
 datasource db {
   provider = "sqlite"

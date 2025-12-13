@@ -10,7 +10,7 @@ const pdfParse = require('pdf-parse');
 const router = Router();
 
 // Get all projects (filtered by user if authenticated)
-router.get('/', async (req, res, next) => {
+router.get('/', async (req, res, _next) => {
   try {
     console.log('[GET /api/projects] Fetching projects...');
 
@@ -45,7 +45,9 @@ router.get('/', async (req, res, next) => {
         },
       },
     });
-    console.log(`[GET /api/projects] Found ${projects.length} projects for user ${req.user?.id || 'anonymous'}`);
+    console.log(
+      `[GET /api/projects] Found ${projects.length} projects for user ${req.user?.id || 'anonymous'}`
+    );
     res.json(projects);
   } catch (error: any) {
     console.error('[GET /api/projects] Error:', {
@@ -67,7 +69,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const projectId = req.params.id;
     console.log(`[GET /api/projects/:id] Fetching project ${projectId}...`);
-    
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
@@ -101,7 +103,9 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    console.log(`[GET /api/projects/:id] Project ${projectId} found with ${project.chapters.length} chapters`);
+    console.log(
+      `[GET /api/projects/:id] Project ${projectId} found with ${project.chapters.length} chapters`
+    );
     res.json(project);
   } catch (error: any) {
     console.error(`[GET /api/projects/:id] Error for project ${req.params.id}:`, {
@@ -139,7 +143,9 @@ router.post('/parse-brief', async (req, res, next) => {
         // Plain text
         briefText = briefFile.data.toString('utf-8');
       } else {
-        return res.status(400).json({ error: 'Unsupported file type. Please upload PDF, DOCX, or TXT' });
+        return res
+          .status(400)
+          .json({ error: 'Unsupported file type. Please upload PDF, DOCX, or TXT' });
       }
     } catch (parseError) {
       console.error('File parsing error:', parseError);
@@ -208,24 +214,22 @@ Return ONLY valid JSON (no preamble, no explanation):
 \`\`\`
 `;
 
-    const result = await agentOrchestrator.invokeAgent(
-      'content-architect',
-      briefParsingPrompt
-    );
+    const result = await agentOrchestrator.invokeAgent('content-architect', briefParsingPrompt);
 
     // Parse the JSON response
     let extractedData;
     try {
       // Extract JSON from markdown code blocks if present
-      const jsonMatch = result.match(/```json\s*([\s\S]*?)\s*```/) || result.match(/```\s*([\s\S]*?)\s*```/);
+      const jsonMatch =
+        result.match(/```json\s*([\s\S]*?)\s*```/) || result.match(/```\s*([\s\S]*?)\s*```/);
       const jsonString = jsonMatch ? jsonMatch[1] : result;
       extractedData = JSON.parse(jsonString);
-    } catch (parseError) {
+    } catch {
       console.error('Failed to parse agent response as JSON:', result);
       return res.status(500).json({
         error: 'Failed to parse brief',
         details: 'Agent response was not valid JSON',
-        rawResponse: result.substring(0, 500)
+        rawResponse: result.substring(0, 500),
       });
     }
 

@@ -46,9 +46,7 @@ export interface StreamOptions extends CompletionOptions {
  * These models have different API requirements
  */
 function isNewGenerationModel(model: string): boolean {
-  return model.startsWith('o1') ||
-         model.startsWith('gpt-5') ||
-         model.includes('gpt-5');
+  return model.startsWith('o1') || model.startsWith('gpt-5') || model.includes('gpt-5');
 }
 
 /**
@@ -89,7 +87,7 @@ export async function getCompletion(options: CompletionOptions): Promise<Complet
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: 'system', content: options.systemPrompt },
-    ...options.messages.map(m => ({
+    ...options.messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
@@ -145,10 +143,13 @@ async function getReasoningCompletion(
   // o1 models use 'developer' role for system instructions
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: 'developer', content: options.systemPrompt } as OpenAI.Chat.ChatCompletionMessageParam,
-    ...options.messages.map(m => ({
-      role: m.role === 'system' ? 'developer' : m.role,
-      content: m.content,
-    } as OpenAI.Chat.ChatCompletionMessageParam)),
+    ...options.messages.map(
+      (m) =>
+        ({
+          role: m.role === 'system' ? 'developer' : m.role,
+          content: m.content,
+        }) as OpenAI.Chat.ChatCompletionMessageParam
+    ),
   ];
 
   const response = await openai.chat.completions.create({
@@ -190,7 +191,7 @@ export async function getStreamingCompletion(options: StreamOptions): Promise<Co
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: 'system', content: options.systemPrompt },
-    ...options.messages.map(m => ({
+    ...options.messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),

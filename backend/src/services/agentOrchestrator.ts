@@ -95,12 +95,14 @@ export class AgentOrchestrator {
         // Add progressive delay between agent calls to avoid rate limits
         if (attempt === 0) {
           const baseDelay = 1000; // 1 second base delay (OpenAI is faster)
-          await new Promise(resolve => setTimeout(resolve, baseDelay));
+          await new Promise((resolve) => setTimeout(resolve, baseDelay));
         }
 
         // Validate API key before making request
         if (!isOpenAIConfigured()) {
-          throw new Error('OPENAI_API_KEY is not set. Please configure your API key in the .env file.');
+          throw new Error(
+            'OPENAI_API_KEY is not set. Please configure your API key in the .env file.'
+          );
         }
 
         const result = await getCompletion({
@@ -111,7 +113,9 @@ export class AgentOrchestrator {
           maxTokens: modelConfig.maxTokens,
         });
 
-        onProgress?.(`[${agentName}] completed (${result.usage.totalTokens} tokens, ${result.model})`);
+        onProgress?.(
+          `[${agentName}] completed (${result.usage.totalTokens} tokens, ${result.model})`
+        );
 
         return result.content;
       } catch (error: any) {
@@ -119,58 +123,74 @@ export class AgentOrchestrator {
         const errorMessage = error.message || String(error);
 
         // Check for different types of API errors
-        const isRateLimit = errorStatus === 429 ||
-                           errorMessage.includes('rate_limit') ||
-                           errorMessage.includes('too many requests');
-        const isAuthError = errorStatus === 401 ||
-                          errorStatus === 403 ||
-                          errorMessage.includes('api key') ||
-                          errorMessage.includes('authentication') ||
-                          errorMessage.includes('unauthorized');
-        const isTimeout = errorMessage.includes('timeout') ||
-                         errorMessage.includes('ETIMEDOUT') ||
-                         errorMessage.includes('ECONNRESET');
+        const isRateLimit =
+          errorStatus === 429 ||
+          errorMessage.includes('rate_limit') ||
+          errorMessage.includes('too many requests');
+        const isAuthError =
+          errorStatus === 401 ||
+          errorStatus === 403 ||
+          errorMessage.includes('api key') ||
+          errorMessage.includes('authentication') ||
+          errorMessage.includes('unauthorized');
+        const isTimeout =
+          errorMessage.includes('timeout') ||
+          errorMessage.includes('ETIMEDOUT') ||
+          errorMessage.includes('ECONNRESET');
         const isServerError = errorStatus >= 500 && errorStatus < 600;
 
         // Log detailed error for debugging
         console.error(`[${agentName}] API Error:`, {
           status: errorStatus,
           message: errorMessage,
-          type: isRateLimit ? 'rate_limit' :
-                isAuthError ? 'auth_error' :
-                isTimeout ? 'timeout' :
-                isServerError ? 'server_error' : 'unknown',
+          type: isRateLimit
+            ? 'rate_limit'
+            : isAuthError
+              ? 'auth_error'
+              : isTimeout
+                ? 'timeout'
+                : isServerError
+                  ? 'server_error'
+                  : 'unknown',
           attempt: attempt + 1,
-          retries: retries
+          retries: retries,
         });
 
         // Handle rate limits with exponential backoff
         if (isRateLimit && attempt < retries) {
           const waitTime = Math.pow(2, attempt) * 10000; // 10s, 20s, 40s
-          onProgress?.(`Rate limit hit. Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          onProgress?.(
+            `Rate limit hit. Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
 
         // Handle auth errors - don't retry, fail immediately
         if (isAuthError) {
           onProgress?.(`Authentication error: ${errorMessage}. Please check your API key.`);
-          throw new Error(`API Authentication failed: ${errorMessage}. Please check your OPENAI_API_KEY environment variable.`);
+          throw new Error(
+            `API Authentication failed: ${errorMessage}. Please check your OPENAI_API_KEY environment variable.`
+          );
         }
 
         // Handle timeouts - retry with longer delay
         if (isTimeout && attempt < retries) {
           const waitTime = 5000 * (attempt + 1); // 5s, 10s, 15s
-          onProgress?.(`Connection timeout. Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          onProgress?.(
+            `Connection timeout. Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
 
         // Handle server errors - retry with exponential backoff
         if (isServerError && attempt < retries) {
           const waitTime = Math.pow(2, attempt) * 5000; // 5s, 10s, 20s
-          onProgress?.(`Server error (${errorStatus}). Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          onProgress?.(
+            `Server error (${errorStatus}). Waiting ${waitTime / 1000}s before retry ${attempt + 1}/${retries}...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
 

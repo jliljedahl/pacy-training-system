@@ -35,17 +35,17 @@ router.post('/analyze-company', async (req, res, next) => {
     let companyData;
     try {
       // Extract JSON from markdown code blocks if present
-      const jsonMatch = result.match(/```json\s*([\s\S]*?)\s*```/) ||
-                        result.match(/```\s*([\s\S]*?)\s*```/);
+      const jsonMatch =
+        result.match(/```json\s*([\s\S]*?)\s*```/) || result.match(/```\s*([\s\S]*?)\s*```/);
       const jsonString = jsonMatch ? jsonMatch[1] : result;
       companyData = JSON.parse(jsonString.trim());
-    } catch (parseError) {
+    } catch {
       console.error('[Onboarding] Failed to parse agent response:', result.substring(0, 500));
       return res.status(500).json({
         error: true,
         errorType: 'parse_error',
         message: 'Failed to parse company analysis',
-        rawResponse: result.substring(0, 1000)
+        rawResponse: result.substring(0, 1000),
       });
     }
 
@@ -56,7 +56,6 @@ router.post('/analyze-company', async (req, res, next) => {
 
     console.log(`[Onboarding] Successfully analyzed: ${companyData.company?.name || 'Unknown'}`);
     res.json(companyData);
-
   } catch (error: any) {
     console.error('[Onboarding] Error:', error.message);
     next(error);

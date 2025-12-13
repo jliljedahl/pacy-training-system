@@ -15,15 +15,11 @@ export const supabaseAdmin = createClient(
 
 // Create a client for a specific user's token (for RLS)
 export function createUserClient(accessToken: string) {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
       },
-    }
-  );
+    },
+  });
 }

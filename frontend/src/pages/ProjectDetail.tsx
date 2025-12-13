@@ -31,7 +31,12 @@ export default function ProjectDetail() {
 
   // Handle createMatrix query param (after debrief approved)
   useEffect(() => {
-    if (searchParams.get('createMatrix') === 'true' && project?.status === 'matrix_creation' && !project?.programMatrix && !executing) {
+    if (
+      searchParams.get('createMatrix') === 'true' &&
+      project?.status === 'matrix_creation' &&
+      !project?.programMatrix &&
+      !executing
+    ) {
       // Auto-start matrix creation after debrief is approved
       startMatrixCreation();
       // Clear the query param
@@ -66,19 +71,25 @@ export default function ProjectDetail() {
       console.log('🔍 Loaded project data:', response.data);
       console.log('🔍 Program Matrix exists:', !!response.data.programMatrix);
       console.log('🔍 Workflow Steps:', response.data.workflowSteps);
-      
+
       // Log chapters and sessions for debugging
       if (response.data.chapters) {
         console.log(`🔍 Found ${response.data.chapters.length} chapters`);
         response.data.chapters.forEach((chapter: any) => {
-          console.log(`  Chapter ${chapter.number}: ${chapter.name} - ${chapter.sessions?.length || 0} sessions`);
+          console.log(
+            `  Chapter ${chapter.number}: ${chapter.name} - ${chapter.sessions?.length || 0} sessions`
+          );
           chapter.sessions?.forEach((session: any) => {
-            console.log(`    Session ${session.number}: ${session.name} - Article: ${session.article ? 'YES' : 'NO'}`);
+            console.log(
+              `    Session ${session.number}: ${session.name} - Article: ${session.article ? 'YES' : 'NO'}`
+            );
           });
         });
       }
-      
-      const matrixStep = response.data.workflowSteps?.find((s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design');
+
+      const matrixStep = response.data.workflowSteps?.find(
+        (s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design'
+      );
       console.log('🔍 Matrix step found:', !!matrixStep);
       if (matrixStep) {
         console.log('🔍 Matrix step result length:', matrixStep.result?.length || 0);
@@ -148,21 +159,21 @@ export default function ProjectDetail() {
     try {
       await workflowApi.approveArticle(articleId);
       await loadProject();
-      
+
       // After approving first article, check if we should auto-generate all remaining articles
       const firstArticle = project?.chapters
         ?.flatMap((c: any) => c.sessions)
         ?.find((s: any) => s.article?.id === articleId);
-      
+
       if (firstArticle) {
         const allSessions = project?.chapters?.flatMap((c: any) => c.sessions) || [];
         const sessionsWithoutArticles = allSessions.filter((s: any) => !s.article);
-        
+
         if (sessionsWithoutArticles.length > 0) {
           const shouldBatch = confirm(
             `Du har godkänt första artikeln. Vill du generera alla ${sessionsWithoutArticles.length} återstående artiklar automatiskt?`
           );
-          
+
           if (shouldBatch) {
             await batchCreateAllArticles();
           }
@@ -176,7 +187,7 @@ export default function ProjectDetail() {
 
   const batchCreateAllArticles = async () => {
     if (!id) return;
-    
+
     setExecuting(true);
     setProgress([]);
     setProgress((prev) => [...prev, '🚀 Starting batch generation for ALL articles...']);
@@ -187,16 +198,19 @@ export default function ProjectDetail() {
       });
 
       console.log('Batch generation result:', result);
-      setProgress((prev) => [...prev, `✅ Batch generation complete! Created ${result.created || 0} articles.`]);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setProgress((prev) => [
+        ...prev,
+        `✅ Batch generation complete! Created ${result.created || 0} articles.`,
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await loadProject();
-      
+
       setTimeout(async () => {
         await loadProject();
         setProgress((prev) => [...prev, '🔄 Refreshed project data']);
       }, 2000);
-      
+
       setActiveTab('content');
     } catch (error: any) {
       console.error('Batch article creation failed:', error);
@@ -230,18 +244,18 @@ export default function ProjectDetail() {
     try {
       await workflowApi.approveVideo(videoId);
       await loadProject();
-      
+
       // After approving first video, offer to batch generate rest
       const allSessions = project?.chapters?.flatMap((c: any) => c.sessions) || [];
       const sessionsWithArticlesButNoVideo = allSessions.filter(
         (s: any) => s.article && !s.videoScript
       );
-      
+
       if (sessionsWithArticlesButNoVideo.length > 0) {
         const shouldBatch = confirm(
           `Du har godkänt första video-narrativet. Vill du generera alla ${sessionsWithArticlesButNoVideo.length} återstående video-narrativ automatiskt?`
         );
-        
+
         if (shouldBatch) {
           await batchCreateAllVideos();
         }
@@ -254,7 +268,7 @@ export default function ProjectDetail() {
 
   const batchCreateAllVideos = async () => {
     if (!id) return;
-    
+
     setExecuting(true);
     setProgress([]);
     setProgress((prev) => [...prev, '🎬 Starting batch generation for ALL video scripts...']);
@@ -264,15 +278,18 @@ export default function ProjectDetail() {
         setProgress((prev) => [...prev, message]);
       });
 
-      setProgress((prev) => [...prev, `✅ Batch video generation complete! Created ${result.created || 0} video scripts.`]);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setProgress((prev) => [
+        ...prev,
+        `✅ Batch video generation complete! Created ${result.created || 0} video scripts.`,
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await loadProject();
-      
+
       setTimeout(async () => {
         await loadProject();
       }, 2000);
-      
+
       setActiveTab('content');
     } catch (error: any) {
       console.error('Batch video creation failed:', error);
@@ -306,18 +323,16 @@ export default function ProjectDetail() {
     try {
       await workflowApi.approveQuiz(quizId);
       await loadProject();
-      
+
       // After approving first quiz, offer to batch generate rest
       const allSessions = project?.chapters?.flatMap((c: any) => c.sessions) || [];
-      const sessionsWithArticlesButNoQuiz = allSessions.filter(
-        (s: any) => s.article && !s.quiz
-      );
-      
+      const sessionsWithArticlesButNoQuiz = allSessions.filter((s: any) => s.article && !s.quiz);
+
       if (sessionsWithArticlesButNoQuiz.length > 0) {
         const shouldBatch = confirm(
           `Du har godkänt första quizet. Vill du generera alla ${sessionsWithArticlesButNoQuiz.length} återstående quiz automatiskt?`
         );
-        
+
         if (shouldBatch) {
           await batchCreateAllQuizzes();
         }
@@ -330,7 +345,7 @@ export default function ProjectDetail() {
 
   const batchCreateAllQuizzes = async () => {
     if (!id) return;
-    
+
     setExecuting(true);
     setProgress([]);
     setProgress((prev) => [...prev, '🎯 Starting batch generation for ALL quizzes...']);
@@ -340,15 +355,18 @@ export default function ProjectDetail() {
         setProgress((prev) => [...prev, message]);
       });
 
-      setProgress((prev) => [...prev, `✅ Batch quiz generation complete! Created ${result.created || 0} quizzes.`]);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setProgress((prev) => [
+        ...prev,
+        `✅ Batch quiz generation complete! Created ${result.created || 0} quizzes.`,
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await loadProject();
-      
+
       setTimeout(async () => {
         await loadProject();
       }, 2000);
-      
+
       setActiveTab('content');
     } catch (error: any) {
       console.error('Batch quiz creation failed:', error);
@@ -365,12 +383,12 @@ export default function ProjectDetail() {
     setProgress((prev) => [...prev, '🧪 Starting test session (article + video + quiz)...']);
 
     try {
-      const result = await workflowApi.createTestSession(sessionId, (message) => {
+      await workflowApi.createTestSession(sessionId, (message) => {
         setProgress((prev) => [...prev, message]);
       });
 
       setProgress((prev) => [...prev, '✅ Test session complete!']);
-      
+
       await loadProject();
       setActiveTab('content');
     } catch (error: any) {
@@ -382,12 +400,18 @@ export default function ProjectDetail() {
     }
   };
 
-  const saveFeedbackForContent = async (type: 'article' | 'video' | 'quiz', id: string, feedbackText: string) => {
+  const saveFeedbackForContent = async (
+    type: 'article' | 'video' | 'quiz',
+    id: string,
+    feedbackText: string
+  ) => {
     try {
       await workflowApi.saveFeedback(type, id, feedbackText);
       setFeedback((prev) => ({ ...prev, [`${type}-${id}`]: feedbackText }));
       await loadProject();
-      alert('Feedback sparad! Denna feedback kommer att användas när du genererar resten av kapitlet.');
+      alert(
+        'Feedback sparad! Denna feedback kommer att användas när du genererar resten av kapitlet.'
+      );
     } catch (error: any) {
       console.error('Failed to save feedback:', error);
       alert(`Kunde inte spara feedback: ${error.message}`);
@@ -441,53 +465,62 @@ export default function ProjectDetail() {
   // Find next chapter that needs generation
   const findNextChapter = () => {
     if (!project?.chapters) return null;
-    
+
     const sortedChapters = [...project.chapters].sort((a: any, b: any) => a.number - b.number);
-    
+
     for (const chapter of sortedChapters) {
       const sessions = chapter.sessions || [];
       const hasIncompleteContent = sessions.some((session: any) => {
         // Check if session is missing any content
         return !session.article || !session.videoScript || !session.quiz;
       });
-      
+
       if (hasIncompleteContent) {
         return chapter;
       }
     }
-    
+
     return null; // All chapters are complete
   };
 
   const batchCreateChapterComplete = async (chapterId: string) => {
     setExecuting(true);
     setProgress([]);
-    setProgress((prev) => [...prev, '🚀 Starting complete chapter batch generation (article + video + quiz)...']);
+    setProgress((prev) => [
+      ...prev,
+      '🚀 Starting complete chapter batch generation (article + video + quiz)...',
+    ]);
 
     try {
-      const result = await workflowApi.batchCreateChapterComplete(chapterId, (message) => {
+      await workflowApi.batchCreateChapterComplete(chapterId, (message) => {
         setProgress((prev) => [...prev, message]);
       });
 
       setProgress((prev) => [...prev, '✅ Chapter batch generation complete!']);
       setLastCompletedChapter(chapterId);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await loadProject();
-      
+
       setTimeout(async () => {
         await loadProject();
       }, 2000);
-      
+
       // Show option to continue with next chapter or edit
       const nextChapter = findNextChapter();
       if (nextChapter) {
-        setProgress((prev) => [...prev, `📚 Nästa kapitel att generera: Kapitel ${nextChapter.number} - ${nextChapter.name}`]);
-        setProgress((prev) => [...prev, `💡 Du kan nu antingen redigera innehåll via innehållsförteckningen eller fortsätta med nästa kapitel.`]);
+        setProgress((prev) => [
+          ...prev,
+          `📚 Nästa kapitel att generera: Kapitel ${nextChapter.number} - ${nextChapter.name}`,
+        ]);
+        setProgress((prev) => [
+          ...prev,
+          `💡 Du kan nu antingen redigera innehåll via innehållsförteckningen eller fortsätta med nästa kapitel.`,
+        ]);
       } else {
         setProgress((prev) => [...prev, `🎉 Alla kapitel är nu genererade!`]);
       }
-      
+
       setActiveTab('toc'); // Switch to table of contents for review/editing
     } catch (error: any) {
       console.error('Chapter batch creation failed:', error);
@@ -509,25 +542,30 @@ export default function ProjectDetail() {
       });
 
       console.log('Batch generation result:', result);
-      setProgress((prev) => [...prev, `✅ Batch generation complete! Created ${result.created || 0} articles.`]);
-      
+      setProgress((prev) => [
+        ...prev,
+        `✅ Batch generation complete! Created ${result.created || 0} articles.`,
+      ]);
+
       // Wait a moment for database to be fully updated
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Reload project data to show new articles
       await loadProject();
-      
+
       // Force another reload after a short delay to ensure all articles are visible
       setTimeout(async () => {
         await loadProject();
         setProgress((prev) => [...prev, '🔄 Refreshed project data']);
       }, 2000);
-      
+
       setActiveTab('content');
     } catch (error: any) {
       console.error('Batch article creation failed:', error);
       setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
-      alert(`Batch generation failed: ${error.message}\n\nCheck the progress log below for details.`);
+      alert(
+        `Batch generation failed: ${error.message}\n\nCheck the progress log below for details.`
+      );
     } finally {
       setExecuting(false);
     }
@@ -547,9 +585,10 @@ export default function ProjectDetail() {
   };
 
   const printMatrix = () => {
-    const matrixContent = project.workflowSteps
-      ?.find((s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design')
-      ?.result || '';
+    const matrixContent =
+      project.workflowSteps?.find(
+        (s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design'
+      )?.result || '';
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -660,9 +699,10 @@ export default function ProjectDetail() {
   };
 
   const downloadMatrix = () => {
-    const matrixContent = project.workflowSteps
-      ?.find((s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design')
-      ?.result || '';
+    const matrixContent =
+      project.workflowSteps?.find(
+        (s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design'
+      )?.result || '';
 
     const blob = new Blob([matrixContent], { type: 'text/markdown' });
     const url = window.URL.createObjectURL(blob);
@@ -695,11 +735,16 @@ export default function ProjectDetail() {
       <div className="bg-white rounded-2xl subtle-shadow border border-gray-100/50 p-8 mb-8">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-4xl font-semibold text-[#1d1d1f] mb-4 tracking-tight">{project.name}</h1>
+            <h1 className="text-4xl font-semibold text-[#1d1d1f] mb-4 tracking-tight">
+              {project.name}
+            </h1>
             <div className="flex items-center gap-6 text-sm text-[#86868b]">
-              <span className="font-medium text-[#1d1d1f]">Status:</span> <span>{project.status}</span>
-              <span className="font-medium text-[#1d1d1f]">Language:</span> <span>{project.language}</span>
-              <span className="font-medium text-[#1d1d1f]">Deliverables:</span> <span>{project.deliverables.replace(/_/g, ' ')}</span>
+              <span className="font-medium text-[#1d1d1f]">Status:</span>{' '}
+              <span>{project.status}</span>
+              <span className="font-medium text-[#1d1d1f]">Language:</span>{' '}
+              <span>{project.language}</span>
+              <span className="font-medium text-[#1d1d1f]">Deliverables:</span>{' '}
+              <span>{project.deliverables.replace(/_/g, ' ')}</span>
             </div>
           </div>
           <button
@@ -878,38 +923,41 @@ export default function ProjectDetail() {
                   <div key={chapter.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex justify-between items-start mb-4">
                       <h3 className="text-lg font-semibold">
-                      Chapter {chapter.number}: {chapter.name}
-                    </h3>
+                        Chapter {chapter.number}: {chapter.name}
+                      </h3>
                       <div className="flex gap-2">
                         {/* Test session button - only for first session in first chapter */}
-                        {chapter.number === 1 && 
-                         chapter.sessions[0] && 
-                         !chapter.sessions[0].article && 
-                         (project.programMatrix?.approved || project.programMatrix) && (
-                          <button
-                            onClick={() => createTestSession(chapter.sessions[0].id)}
-                            disabled={executing}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm font-medium"
-                            title="Create test session: article + video + quiz"
-                          >
-                            🧪 Create Test Session
-                          </button>
-                        )}
-                        
+                        {chapter.number === 1 &&
+                          chapter.sessions[0] &&
+                          !chapter.sessions[0].article &&
+                          (project.programMatrix?.approved || project.programMatrix) && (
+                            <button
+                              onClick={() => createTestSession(chapter.sessions[0].id)}
+                              disabled={executing}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm font-medium"
+                              title="Create test session: article + video + quiz"
+                            >
+                              🧪 Create Test Session
+                            </button>
+                          )}
+
                         {/* Batch generate articles button */}
-                        {chapter.sessions.some((s: any) => s.article) && 
-                         chapter.sessions.some((s: any) => !s.article) && (
-                          <button
-                            onClick={() => batchCreateArticles(chapter.id)}
-                            disabled={executing}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
-                          >
-                            {executing ? 'Generating...' : 'Generate All Remaining Articles'}
-                          </button>
-                        )}
-                        
+                        {chapter.sessions.some((s: any) => s.article) &&
+                          chapter.sessions.some((s: any) => !s.article) && (
+                            <button
+                              onClick={() => batchCreateArticles(chapter.id)}
+                              disabled={executing}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
+                            >
+                              {executing ? 'Generating...' : 'Generate All Remaining Articles'}
+                            </button>
+                          )}
+
                         {/* Batch generate complete chapter (article + video + quiz) */}
-                        {chapter.sessions.some((s: any) => s.article?.approved && s.videoScript?.approved && s.quiz?.approved) && (
+                        {chapter.sessions.some(
+                          (s: any) =>
+                            s.article?.approved && s.videoScript?.approved && s.quiz?.approved
+                        ) && (
                           <button
                             onClick={() => batchCreateChapterComplete(chapter.id)}
                             disabled={executing}
@@ -926,64 +974,67 @@ export default function ProjectDetail() {
                       {chapter.sessions
                         .sort((a: any, b: any) => a.number - b.number)
                         .map((session: any) => (
-                        <div
-                          key={session.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              Session {session.number}: {session.name}
-                            </p>
-                            {session.article && (
-                              <p className="text-sm text-green-600">
-                                ✓ Article created ({session.article.wordCount} words)
+                          <div
+                            key={session.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded"
+                          >
+                            <div>
+                              <p className="font-medium">
+                                Session {session.number}: {session.name}
                               </p>
-                            )}
-                          </div>
-
-                          {!session.article && (project.programMatrix?.approved || project.programMatrix) && (
-                            <div className="flex gap-2">
-                            <button
-                              onClick={() =>
-                                createArticle(
-                                  session.id,
-                                  !project.chapters.some((c: any) =>
-                                    c.sessions.some((s: any) => s.article)
-                                  )
-                                )
-                              }
-                              disabled={executing}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 text-sm"
-                            >
-                              Create Article
-                              </button>
-                              {/* Test session button - only for first session */}
-                              {session.number === 1.1 && (
-                                <button
-                                  onClick={() => createTestSession(session.id)}
-                                  disabled={executing}
-                                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm"
-                                  title="Create test session: article + video + quiz"
-                                >
-                                  🧪 Test Session
-                            </button>
+                              {session.article && (
+                                <p className="text-sm text-green-600">
+                                  ✓ Article created ({session.article.wordCount} words)
+                                </p>
                               )}
                             </div>
-                          )}
 
-                          {session.article && (
-                            <button
-                              onClick={() => {
-                                const element = document.getElementById(`article-${session.article.id}`);
-                                element?.scrollIntoView({ behavior: 'smooth' });
-                              }}
-                              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm"
-                            >
-                              View Article
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                            {!session.article &&
+                              (project.programMatrix?.approved || project.programMatrix) && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() =>
+                                      createArticle(
+                                        session.id,
+                                        !project.chapters.some((c: any) =>
+                                          c.sessions.some((s: any) => s.article)
+                                        )
+                                      )
+                                    }
+                                    disabled={executing}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 text-sm"
+                                  >
+                                    Create Article
+                                  </button>
+                                  {/* Test session button - only for first session */}
+                                  {session.number === 1.1 && (
+                                    <button
+                                      onClick={() => createTestSession(session.id)}
+                                      disabled={executing}
+                                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm"
+                                      title="Create test session: article + video + quiz"
+                                    >
+                                      🧪 Test Session
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+
+                            {session.article && (
+                              <button
+                                onClick={() => {
+                                  const element = document.getElementById(
+                                    `article-${session.article.id}`
+                                  );
+                                  element?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm"
+                              >
+                                View Article
+                              </button>
+                            )}
+                          </div>
+                        ))}
                     </div>
 
                     {/* Display articles for this chapter */}
@@ -1011,8 +1062,9 @@ export default function ProjectDetail() {
                               </h5>
                               <div className="flex items-center gap-4 mb-3 flex-wrap">
                                 <p className="text-sm text-gray-600">
-                                {session.article.wordCount} words • Status: {session.article.status}
-                              </p>
+                                  {session.article.wordCount} words • Status:{' '}
+                                  {session.article.status}
+                                </p>
                                 {!session.article.approved && (
                                   <button
                                     onClick={() => approveArticle(session.article.id)}
@@ -1064,7 +1116,8 @@ export default function ProjectDetail() {
                                 )}
                               </div>
                               {/* Edit mode or view mode */}
-                              {editingContent?.type === 'article' && editingContent.id === session.article.id ? (
+                              {editingContent?.type === 'article' &&
+                              editingContent.id === session.article.id ? (
                                 <div className="space-y-3">
                                   <textarea
                                     value={editedContent}
@@ -1093,43 +1146,72 @@ export default function ProjectDetail() {
                                 <>
                                   <div className="flex justify-end gap-2 mb-2">
                                     <button
-                                      onClick={() => startEditing('article', session.article.id, session.article.content)}
+                                      onClick={() =>
+                                        startEditing(
+                                          'article',
+                                          session.article.id,
+                                          session.article.content
+                                        )
+                                      }
                                       className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 flex items-center gap-1"
                                     >
                                       <Edit2 className="w-4 h-4" />
                                       Edit
                                     </button>
                                   </div>
-                              <div className="prose max-w-none">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{session.article.content}</ReactMarkdown>
-                              </div>
+                                  <div className="prose max-w-none">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {session.article.content}
+                                    </ReactMarkdown>
+                                  </div>
                                 </>
                               )}
-                              
+
                               {/* Feedback section */}
                               <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <MessageSquare className="w-4 h-4 text-gray-600" />
-                                  <h6 className="font-semibold text-sm text-gray-700">Feedback/Kommentarer</h6>
+                                  <h6 className="font-semibold text-sm text-gray-700">
+                                    Feedback/Kommentarer
+                                  </h6>
                                 </div>
                                 <textarea
-                                  value={feedback[`article-${session.article.id}`] || session.article.feedback || ''}
-                                  onChange={(e) => setFeedback((prev) => ({ ...prev, [`article-${session.article.id}`]: e.target.value }))}
+                                  value={
+                                    feedback[`article-${session.article.id}`] ||
+                                    session.article.feedback ||
+                                    ''
+                                  }
+                                  onChange={(e) =>
+                                    setFeedback((prev) => ({
+                                      ...prev,
+                                      [`article-${session.article.id}`]: e.target.value,
+                                    }))
+                                  }
                                   placeholder="Lägg till feedback för att justera innehållet. Denna feedback kommer att användas när du genererar resten av kapitlet."
                                   className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg text-sm"
                                 />
                                 <button
-                                  onClick={() => saveFeedbackForContent('article', session.article.id, feedback[`article-${session.article.id}`] || '')}
+                                  onClick={() =>
+                                    saveFeedbackForContent(
+                                      'article',
+                                      session.article.id,
+                                      feedback[`article-${session.article.id}`] || ''
+                                    )
+                                  }
                                   className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                                 >
                                   Save Feedback
                                 </button>
                               </div>
-                              
+
                               {session.article.factCheck && (
                                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                                  <p className="text-sm font-semibold text-yellow-800">Fact Check Notes:</p>
-                                  <p className="text-sm text-yellow-700">{session.article.factCheck}</p>
+                                  <p className="text-sm font-semibold text-yellow-800">
+                                    Fact Check Notes:
+                                  </p>
+                                  <p className="text-sm text-yellow-700">
+                                    {session.article.factCheck}
+                                  </p>
                                 </div>
                               )}
 
@@ -1159,7 +1241,8 @@ export default function ProjectDetail() {
                                     </div>
                                   </div>
 
-                                  {editingContent?.type === 'video' && editingContent.id === session.videoScript.id ? (
+                                  {editingContent?.type === 'video' &&
+                                  editingContent.id === session.videoScript.id ? (
                                     <div className="space-y-3">
                                       <textarea
                                         value={editedContent}
@@ -1169,7 +1252,9 @@ export default function ProjectDetail() {
                                       />
                                       <div className="flex gap-2">
                                         <button
-                                          onClick={() => saveContent('video', session.videoScript.id)}
+                                          onClick={() =>
+                                            saveContent('video', session.videoScript.id)
+                                          }
                                           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
                                         >
                                           <Save className="w-4 h-4" />
@@ -1188,7 +1273,13 @@ export default function ProjectDetail() {
                                     <>
                                       <div className="flex justify-end gap-2 mb-2">
                                         <button
-                                          onClick={() => startEditing('video', session.videoScript.id, session.videoScript.content)}
+                                          onClick={() =>
+                                            startEditing(
+                                              'video',
+                                              session.videoScript.id,
+                                              session.videoScript.content
+                                            )
+                                          }
                                           className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 flex items-center gap-1"
                                         >
                                           <Edit2 className="w-4 h-4" />
@@ -1196,7 +1287,9 @@ export default function ProjectDetail() {
                                         </button>
                                       </div>
                                       <div className="prose max-w-none">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{session.videoScript.content}</ReactMarkdown>
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                          {session.videoScript.content}
+                                        </ReactMarkdown>
                                       </div>
                                     </>
                                   )}
@@ -1205,16 +1298,33 @@ export default function ProjectDetail() {
                                   <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex items-center gap-2 mb-2">
                                       <MessageSquare className="w-4 h-4 text-gray-600" />
-                                      <h6 className="font-semibold text-sm text-gray-700">Feedback/Kommentarer</h6>
+                                      <h6 className="font-semibold text-sm text-gray-700">
+                                        Feedback/Kommentarer
+                                      </h6>
                                     </div>
                                     <textarea
-                                      value={feedback[`video-${session.videoScript.id}`] || session.videoScript.feedback || ''}
-                                      onChange={(e) => setFeedback((prev) => ({ ...prev, [`video-${session.videoScript.id}`]: e.target.value }))}
+                                      value={
+                                        feedback[`video-${session.videoScript.id}`] ||
+                                        session.videoScript.feedback ||
+                                        ''
+                                      }
+                                      onChange={(e) =>
+                                        setFeedback((prev) => ({
+                                          ...prev,
+                                          [`video-${session.videoScript.id}`]: e.target.value,
+                                        }))
+                                      }
                                       placeholder="Lägg till feedback för video-narrativet..."
                                       className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg text-sm"
                                     />
                                     <button
-                                      onClick={() => saveFeedbackForContent('video', session.videoScript.id, feedback[`video-${session.videoScript.id}`] || '')}
+                                      onClick={() =>
+                                        saveFeedbackForContent(
+                                          'video',
+                                          session.videoScript.id,
+                                          feedback[`video-${session.videoScript.id}`] || ''
+                                        )
+                                      }
                                       className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                                     >
                                       Save Feedback
@@ -1252,7 +1362,10 @@ export default function ProjectDetail() {
                                   {session.quiz.questions && session.quiz.questions.length > 0 && (
                                     <div className="space-y-4">
                                       {session.quiz.questions.map((q: any, idx: number) => (
-                                        <div key={q.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div
+                                          key={q.id}
+                                          className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                                        >
                                           <p className="font-medium mb-2">
                                             {idx + 1}. {q.question}
                                           </p>
@@ -1273,16 +1386,33 @@ export default function ProjectDetail() {
                                   <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex items-center gap-2 mb-2">
                                       <MessageSquare className="w-4 h-4 text-gray-600" />
-                                      <h6 className="font-semibold text-sm text-gray-700">Feedback/Kommentarer</h6>
+                                      <h6 className="font-semibold text-sm text-gray-700">
+                                        Feedback/Kommentarer
+                                      </h6>
                                     </div>
                                     <textarea
-                                      value={feedback[`quiz-${session.quiz.id}`] || session.quiz.feedback || ''}
-                                      onChange={(e) => setFeedback((prev) => ({ ...prev, [`quiz-${session.quiz.id}`]: e.target.value }))}
+                                      value={
+                                        feedback[`quiz-${session.quiz.id}`] ||
+                                        session.quiz.feedback ||
+                                        ''
+                                      }
+                                      onChange={(e) =>
+                                        setFeedback((prev) => ({
+                                          ...prev,
+                                          [`quiz-${session.quiz.id}`]: e.target.value,
+                                        }))
+                                      }
                                       placeholder="Lägg till feedback för quizet..."
                                       className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg text-sm"
                                     />
                                     <button
-                                      onClick={() => saveFeedbackForContent('quiz', session.quiz.id, feedback[`quiz-${session.quiz.id}`] || '')}
+                                      onClick={() =>
+                                        saveFeedbackForContent(
+                                          'quiz',
+                                          session.quiz.id,
+                                          feedback[`quiz-${session.quiz.id}`] || ''
+                                        )
+                                      }
                                       className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                                     >
                                       Save Feedback
@@ -1309,9 +1439,7 @@ export default function ProjectDetail() {
             <div className="space-y-6">
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-2xl font-semibold text-[#1d1d1f]">
-                    Innehållsförteckning
-                  </h2>
+                  <h2 className="text-2xl font-semibold text-[#1d1d1f]">Innehållsförteckning</h2>
                   {findNextChapter() && (
                     <button
                       onClick={() => {
@@ -1328,18 +1456,20 @@ export default function ProjectDetail() {
                   )}
                 </div>
                 <p className="text-[#86868b]">
-                  Översikt över alla kapitel, sessioner och innehåll. Klicka för att expandera och redigera.
+                  Översikt över alla kapitel, sessioner och innehåll. Klicka för att expandera och
+                  redigera.
                 </p>
                 {findNextChapter() && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
-                      💡 <strong>Nästa kapitel att generera:</strong> Kapitel {findNextChapter()?.number} - {findNextChapter()?.name}
+                      💡 <strong>Nästa kapitel att generera:</strong> Kapitel{' '}
+                      {findNextChapter()?.number} - {findNextChapter()?.name}
                     </p>
                   </div>
                 )}
               </div>
-              <TableOfContents 
-                project={project} 
+              <TableOfContents
+                project={project}
                 onEditContent={startEditing}
                 onSaveContent={saveContent}
                 onEditQuiz={startEditingQuiz}

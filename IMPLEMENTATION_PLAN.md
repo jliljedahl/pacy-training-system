@@ -109,7 +109,10 @@ export async function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'No token provided' });
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
 
   if (error || !user) {
     return res.status(401).json({ error: 'Invalid token' });
@@ -166,20 +169,16 @@ import { supabase } from '../middleware/auth';
 export async function uploadFile(file: Buffer, filename: string, projectId: string) {
   const path = `projects/${projectId}/${filename}`;
 
-  const { data, error } = await supabase.storage
-    .from('source-materials')
-    .upload(path, file, {
-      contentType: 'application/octet-stream',
-    });
+  const { data, error } = await supabase.storage.from('source-materials').upload(path, file, {
+    contentType: 'application/octet-stream',
+  });
 
   if (error) throw error;
   return data.path;
 }
 
 export async function getFileUrl(path: string) {
-  const { data } = supabase.storage
-    .from('source-materials')
-    .getPublicUrl(path);
+  const { data } = supabase.storage.from('source-materials').getPublicUrl(path);
 
   return data.publicUrl;
 }
@@ -203,11 +202,11 @@ VITE_API_URL="https://your-backend.com" # or localhost for dev
 
 ### Deployment Options
 
-| Option | Frontend | Backend | Database |
-|--------|----------|---------|----------|
-| **Vercel + Railway** | Vercel | Railway | Supabase |
-| **Vercel + Render** | Vercel | Render | Supabase |
-| **All Supabase** | Supabase (static) | Edge Functions | Supabase |
+| Option               | Frontend          | Backend        | Database |
+| -------------------- | ----------------- | -------------- | -------- |
+| **Vercel + Railway** | Vercel            | Railway        | Supabase |
+| **Vercel + Render**  | Vercel            | Render         | Supabase |
+| **All Supabase**     | Supabase (static) | Edge Functions | Supabase |
 
 **Recommended: Vercel (frontend) + Railway (backend) + Supabase (database)**
 
@@ -227,13 +226,16 @@ VITE_API_URL="https://your-backend.com" # or localhost for dev
 
 ### New Agent: Company Researcher
 
-```markdown
+````markdown
 # .claude/agents/company-researcher.md
+
 ---
+
 name: company-researcher
 description: Analyzes company websites to extract business context for training programs. Use when user provides a company URL.
 tools: WebFetch, WebSearch, Read, Write
 model: sonnet
+
 ---
 
 # COMPANY RESEARCHER - Business Context Extractor
@@ -294,6 +296,7 @@ Given a company URL, extract and summarize:
   "notes": ["Any important observations"]
 }
 ```
+````
 
 ## IMPORTANT
 
@@ -301,7 +304,8 @@ Given a company URL, extract and summarize:
 - Be conservative with assumptions
 - Flag low-confidence extractions
 - Suggest follow-up questions for unclear areas
-```
+
+````
 
 ### Backend Implementation
 
@@ -344,7 +348,7 @@ router.post('/analyze-company', async (req, res, next) => {
 });
 
 export default router;
-```
+````
 
 ### Frontend Implementation
 
@@ -481,13 +485,16 @@ export default function Onboarding() {
 
 ### New Agent: Brief Interviewer
 
-```markdown
+````markdown
 # .claude/agents/brief-interviewer.md
+
 ---
+
 name: brief-interviewer
 description: Conducts conversational interviews to build training program briefs. Asks smart questions, adapts to responses, and creates structured output.
 tools: Read, Write
 model: sonnet
+
 ---
 
 # BRIEF INTERVIEWER - Conversational Brief Builder
@@ -509,31 +516,38 @@ You're a senior learning consultant having a conversation with a client. Your go
 ## INTERVIEW FLOW
 
 ### 1. Opening (if no company context)
+
 "Hi! I'm here to help you create a training program. Let's start with the basics - what's the main topic or skill you want to train your team on?"
 
 ### 1. Opening (with company context)
+
 "Hi! I see you're from [Company]. Based on your [industry/focus], I have some context already. What specific skill or topic do you want to train your team on?"
 
 ### 2. Core Questions (adapt order based on flow)
 
 **Learning Objectives**
+
 - "What should participants be able to DO after this training?"
 - "Are there specific behaviors you want to see change?"
 
 **Target Audience**
+
 - "Who will be taking this training? What are their roles?"
 - "What's their current knowledge level on this topic?"
 
 **Scope & Deliverables**
+
 - "How comprehensive should this be? A quick refresher or deep dive?"
 - "Do you need just articles, or also videos and quizzes?"
 
 **Constraints & Preferences**
+
 - "Any specific frameworks or methodologies you want to follow?"
 - "Are there source materials you want us to incorporate?"
 - "What language should the content be in?"
 
 ### 3. Closing
+
 - Summarize what you've learned
 - Ask if anything is missing
 - Confirm readiness to proceed
@@ -555,15 +569,15 @@ When interview is complete, output:
     "particularAngle": "Any specific framework or approach",
     "constraints": "Any constraints mentioned",
     "strictFidelity": false,
-    "companyContext": { /* If provided */ }
+    "companyContext": {
+      /* If provided */
+    }
   },
-  "suggestedChapters": [
-    "Chapter 1: ...",
-    "Chapter 2: ..."
-  ],
+  "suggestedChapters": ["Chapter 1: ...", "Chapter 2: ..."],
   "notes": ["Any important observations or suggestions"]
 }
 ```
+````
 
 ## IMPORTANT BEHAVIORS
 
@@ -572,7 +586,8 @@ When interview is complete, output:
 - If user asks a question, answer it helpfully
 - Keep individual messages concise (2-4 sentences max)
 - Use the company context to make relevant suggestions
-```
+
+````
 
 ### Backend: Chat Endpoint with Streaming
 
@@ -671,7 +686,7 @@ async function getInterviewerPrompt(): Promise<string> {
 }
 
 export default router;
-```
+````
 
 ### Frontend: Chat Interface
 
@@ -929,6 +944,7 @@ export default function InterviewChat() {
 ## Files to Create/Modify
 
 ### New Files
+
 - `.claude/agents/company-researcher.md`
 - `.claude/agents/brief-interviewer.md`
 - `backend/src/api/onboarding.ts`
@@ -940,6 +956,7 @@ export default function InterviewChat() {
 - `frontend/src/contexts/AuthContext.tsx`
 
 ### Modified Files
+
 - `backend/prisma/schema.prisma` (add User, Organization, update Project)
 - `backend/src/index.ts` (register new routes)
 - `frontend/src/App.tsx` (add new routes)

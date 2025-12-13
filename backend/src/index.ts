@@ -19,7 +19,7 @@ for (const envVar of requiredEnvVars) {
 }
 
 // Warn about missing optional vars (Supabase)
-const missingOptional = optionalEnvVars.filter(v => !process.env[v]);
+const missingOptional = optionalEnvVars.filter((v) => !process.env[v]);
 if (missingOptional.length > 0) {
   console.warn(`⚠️  Missing Supabase config (auth disabled): ${missingOptional.join(', ')}`);
   console.warn('   Set these in .env to enable authentication');
@@ -32,17 +32,19 @@ import contentRoutes from './api/content';
 import onboardingRoutes from './api/onboarding';
 import interviewRoutes from './api/interview';
 import debriefRoutes from './api/debrief';
-import { authMiddleware, optionalAuthMiddleware } from './middleware/auth';
+import { authMiddleware } from './middleware/auth';
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(fileUpload({
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800') },
-  abortOnLimit: true,
-}));
+app.use(
+  fileUpload({
+    limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800') },
+    abortOnLimit: true,
+  })
+);
 
 // Static files for uploads
 const uploadDir = path.resolve(process.env.UPLOAD_DIR || '../uploads');
@@ -75,7 +77,7 @@ app.get('/health', (req, res) => {
 });
 
 // Error handling
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('❌ Express Error Handler:', {
     message: err.message,
     stack: err.stack,
@@ -88,14 +90,14 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { 
+    ...(process.env.NODE_ENV === 'development' && {
       stack: err.stack,
       details: {
         name: err.name,
         code: err.code,
         path: req.path,
         method: req.method,
-      }
+      },
     }),
   });
 });

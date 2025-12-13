@@ -59,11 +59,14 @@ export default function UploadBrief() {
   const handleContinue = () => {
     if (extractedData) {
       // Store the extracted brief data
-      sessionStorage.setItem('interviewBrief', JSON.stringify({
-        status: 'complete',
-        brief: extractedData.extracted,
-        source: 'upload'
-      }));
+      sessionStorage.setItem(
+        'interviewBrief',
+        JSON.stringify({
+          status: 'complete',
+          brief: extractedData.extracted,
+          source: 'upload',
+        })
+      );
       navigate('/projects/new');
     }
   };
@@ -84,12 +87,8 @@ export default function UploadBrief() {
         <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
           <Upload className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-3xl font-semibold text-[#1d1d1f] mb-3">
-          Ladda upp din brief
-        </h1>
-        <p className="text-[#86868b]">
-          Vi analyserar dokumentet och extraherar utbildningskraven.
-        </p>
+        <h1 className="text-3xl font-semibold text-[#1d1d1f] mb-3">Ladda upp din brief</h1>
+        <p className="text-[#86868b]">Vi analyserar dokumentet och extraherar utbildningskraven.</p>
       </div>
 
       {/* Company context badge */}
@@ -119,9 +118,7 @@ export default function UploadBrief() {
                 </div>
                 <div className="text-left">
                   <p className="font-medium text-[#1d1d1f]">{file.name}</p>
-                  <p className="text-sm text-[#86868b]">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </p>
+                  <p className="text-sm text-[#86868b]">{(file.size / 1024).toFixed(1)} KB</p>
                 </div>
                 <button
                   onClick={() => setFile(null)}
@@ -146,9 +143,7 @@ export default function UploadBrief() {
                   <p className="font-medium text-[#1d1d1f] mb-1">
                     Dra och släpp eller klicka för att ladda upp
                   </p>
-                  <p className="text-sm text-[#86868b]">
-                    PDF, DOCX eller TXT
-                  </p>
+                  <p className="text-sm text-[#86868b]">PDF, DOCX eller TXT</p>
                 </label>
               </>
             )}

@@ -10,7 +10,9 @@ const api = axios.create({
 
 // Add auth token to all requests
 api.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`;
   }
@@ -31,7 +33,9 @@ api.interceptors.response.use(
 
 // Helper to get auth token for EventSource
 export async function getAuthToken(): Promise<string | null> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return session?.access_token ?? null;
 }
 
@@ -74,7 +78,7 @@ export function createAuthenticatedEventSource(
             try {
               const data = JSON.parse(line.slice(6));
               onMessage(data);
-            } catch (e) {
+            } catch {
               // Ignore parse errors
             }
           }
@@ -269,11 +273,12 @@ export const workflowApi = {
     feedback: string,
     selectedAlternative?: string,
     onProgress?: (message: string) => void
-  ) => createSSEPostPromise(
-    `/api/workflow/projects/${projectId}/debrief/regenerate`,
-    { feedback, selectedAlternative },
-    onProgress
-  ),
+  ) =>
+    createSSEPostPromise(
+      `/api/workflow/projects/${projectId}/debrief/regenerate`,
+      { feedback, selectedAlternative },
+      onProgress
+    ),
 
   // Approve debrief and proceed to matrix
   approveDebrief: (projectId: string, selectedAlternative: string) =>
@@ -304,8 +309,15 @@ export const workflowApi = {
 
   approveMatrix: (projectId: string) => api.post(`/workflow/projects/${projectId}/approve-matrix`),
 
-  createArticle: (sessionId: string, isFirstArticle: boolean, onProgress: (message: string) => void) =>
-    createSSEPromise(`/api/workflow/sessions/${sessionId}/article?isFirstArticle=${isFirstArticle}`, onProgress),
+  createArticle: (
+    sessionId: string,
+    isFirstArticle: boolean,
+    onProgress: (message: string) => void
+  ) =>
+    createSSEPromise(
+      `/api/workflow/sessions/${sessionId}/article?isFirstArticle=${isFirstArticle}`,
+      onProgress
+    ),
 
   approveArticle: (articleId: string) => api.post(`/workflow/articles/${articleId}/approve`),
   reviseArticle: (articleId: string, feedback: string) =>
@@ -326,12 +338,20 @@ export const workflowApi = {
 
   approveVideo: (videoId: string) => api.post(`/workflow/videos/${videoId}/approve`),
 
-  createQuiz: (sessionId: string, numQuestions?: number, onProgress?: (message: string) => void) => {
+  createQuiz: (
+    sessionId: string,
+    numQuestions?: number,
+    onProgress?: (message: string) => void
+  ) => {
     const url = `/api/workflow/sessions/${sessionId}/quiz${numQuestions ? `?numQuestions=${numQuestions}` : ''}`;
     return createSSEPromise(url, onProgress);
   },
 
-  batchCreateQuizzes: (projectId: string, numQuestions?: number, onProgress?: (message: string) => void) => {
+  batchCreateQuizzes: (
+    projectId: string,
+    numQuestions?: number,
+    onProgress?: (message: string) => void
+  ) => {
     const url = `/api/workflow/projects/${projectId}/quizzes/batch${numQuestions ? `?numQuestions=${numQuestions}` : ''}`;
     return createSSEPromise(url, onProgress);
   },
@@ -411,7 +431,7 @@ async function createSSEPostStream(
           if (data.type === 'text') {
             fullResponse += data.content;
           }
-        } catch (e) {
+        } catch {
           // Ignore parse errors
         }
       }
@@ -428,15 +448,11 @@ export const debriefApi = {
     message: string,
     onChunk: (text: string) => void
   ): Promise<string> => {
-    return createSSEPostStream(
-      `/api/debrief/${projectId}/chat`,
-      { message },
-      (data) => {
-        if (data.type === 'text') {
-          onChunk(data.content);
-        }
+    return createSSEPostStream(`/api/debrief/${projectId}/chat`, { message }, (data) => {
+      if (data.type === 'text') {
+        onChunk(data.content);
       }
-    );
+    });
   },
 
   // Get sources for a project
@@ -446,8 +462,7 @@ export const debriefApi = {
     ),
 
   // Clear session history
-  clearSession: (projectId: string) =>
-    api.delete(`/debrief/${projectId}/session`),
+  clearSession: (projectId: string) => api.delete(`/debrief/${projectId}/session`),
 };
 
 export default api;

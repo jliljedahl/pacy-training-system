@@ -10,18 +10,21 @@ This Skill provides advanced techniques for creating exceptional articles that a
 ## Core Principles
 
 ### 1. Word Economy
+
 - Every word must earn its place
 - Cut ruthlessly: if a sentence doesn't advance understanding or engagement, remove it
 - Use active voice to reduce word count while increasing clarity
 - Replace phrases with single words when possible ("in order to" → "to")
 
 ### 2. Narrative Momentum
+
 - Start with a hook that creates immediate curiosity or relevance
 - Each paragraph should flow naturally to the next
 - Use transitional phrases sparingly—let ideas connect organically
 - End sections with forward momentum, not summaries
 
 ### 3. Reader Engagement
+
 - Address the reader directly ("you") to create connection
 - Use concrete examples before abstract concepts
 - Create "aha moments" by revealing insights progressively
@@ -30,18 +33,22 @@ This Skill provides advanced techniques for creating exceptional articles that a
 ## Advanced Techniques
 
 ### Opening Hooks
+
 **Effective hooks:**
+
 - A surprising statistic or fact
 - A relatable scenario the reader recognizes
 - A question that reveals a gap in knowledge
 - A bold statement that challenges assumptions
 
 **Avoid:**
+
 - Generic introductions ("In today's world...")
 - Dictionary definitions
 - Overly broad statements
 
 ### Paragraph Structure
+
 - **Lead sentence**: The main point or insight
 - **Supporting sentences**: Evidence, examples, or explanation
 - **Transition**: Natural bridge to next idea
@@ -49,24 +56,30 @@ This Skill provides advanced techniques for creating exceptional articles that a
 Keep paragraphs to 3-5 lines. White space is your friend.
 
 ### Example Integration
+
 **Good example structure:**
+
 1. Set the scene briefly (1-2 sentences)
 2. Show the action or decision (2-3 sentences)
 3. Reveal the outcome or insight (1-2 sentences)
 
 **Example quality checklist:**
+
 - ✅ Specific and concrete
 - ✅ Relevant to target audience's actual work
 - ✅ Illustrates the point clearly
 - ✅ Memorable and relatable
 
 ### Conclusion Craft
+
 **Strong conclusions:**
+
 - Reinforce the core insight (1 sentence)
 - Provide clear next action or application (1-2 sentences)
 - End with forward momentum ("Now you can..." or "Next time you...")
 
 **Weak conclusions to avoid:**
+
 - Summarizing every point
 - Generic platitudes
 - Introducing new information
@@ -75,6 +88,7 @@ Keep paragraphs to 3-5 lines. White space is your friend.
 ## Word Count Discipline
 
 ### When Approaching Limits
+
 1. **Cut redundant examples**: 2 strong examples > 3 mediocre ones
 2. **Trim theoretical elaboration**: Keep theory lean, focus on application
 3. **Remove repetitive phrasing**: Say it once, well
@@ -82,6 +96,7 @@ Keep paragraphs to 3-5 lines. White space is your friend.
 5. **Simplify explanations**: Use fewer words to convey the same meaning
 
 ### Self-Editing Process
+
 1. Write first draft without worrying about length
 2. Identify core message and key insights
 3. Cut everything that doesn't serve the core message
@@ -91,18 +106,21 @@ Keep paragraphs to 3-5 lines. White space is your friend.
 ## Style Refinement
 
 ### Voice & Tone
+
 - **Conversational**: Write like explaining to a smart colleague
 - **Professional**: Not casual, but not academic
 - **Confident**: State insights clearly, avoid hedging
 - **Respectful**: Honor the reader's time and intelligence
 
 ### Sentence Variety
+
 - Mix short punchy sentences with longer explanatory ones
 - Vary sentence structure to maintain rhythm
 - Use parallel structure for lists or comparisons
 - Break up long sentences for clarity
 
 ### Precision in Language
+
 - Choose specific words over generic ones
 - Use strong verbs instead of weak verb + adverb combinations
 - Prefer concrete nouns over abstract ones
@@ -138,8 +156,8 @@ Keep paragraphs to 3-5 lines. White space is your friend.
 ## Integration with HIST Principles
 
 This Skill enhances HIST (High Intensity Skill Training) articles by:
+
 - Ensuring brevity with impact (word economy)
 - Maintaining practical focus (concrete examples)
 - Supporting micro-learning format (scannable structure)
 - Creating engaging narrative flow (momentum techniques)
-

@@ -77,7 +77,7 @@ export default function InterviewChat() {
 
   const sendMessage = async (text: string, isInitial = false) => {
     if (!isInitial && text.trim()) {
-      setMessages(prev => [...prev, { role: 'user', content: text }]);
+      setMessages((prev) => [...prev, { role: 'user', content: text }]);
     }
 
     setLoading(true);
@@ -131,13 +131,16 @@ export default function InterviewChat() {
               } else if (data.type === 'done') {
                 // Finalize the message
                 if (assistantMessage) {
-                  setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: 'assistant', content: assistantMessage },
+                  ]);
                   setStreamingContent('');
                 }
               } else if (data.type === 'error') {
                 console.error('Stream error:', data.message);
               }
-            } catch (e) {
+            } catch {
               // Ignore parse errors
             }
           }
@@ -145,10 +148,13 @@ export default function InterviewChat() {
       }
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Ett fel uppstod. Försök igen.'
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Ett fel uppstod. Försök igen.',
+        },
+      ]);
     } finally {
       setLoading(false);
       setStreamingContent('');
@@ -188,9 +194,7 @@ export default function InterviewChat() {
     <div className="h-[calc(100vh-120px)] flex flex-col max-w-3xl mx-auto">
       {/* Header */}
       <div className="py-6 px-4">
-        <h1 className="text-2xl font-semibold text-[#1d1d1f]">
-          Berätta om din utbildning
-        </h1>
+        <h1 className="text-2xl font-semibold text-[#1d1d1f]">Berätta om din utbildning</h1>
         <p className="text-[#86868b] mt-1">
           Jag ställer några frågor för att förstå dina behov.
           {companyContext && (
@@ -206,10 +210,7 @@ export default function InterviewChat() {
           if (!displayContent) return null;
 
           return (
-            <div
-              key={idx}
-              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}
-            >
+            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
               {msg.role === 'assistant' && (
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-5 h-5 text-[#007AFF]" />
@@ -217,9 +218,7 @@ export default function InterviewChat() {
               )}
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-[#007AFF] text-white'
-                    : 'bg-[#f5f5f7] text-[#1d1d1f]'
+                  msg.role === 'user' ? 'bg-[#007AFF] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f]'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{displayContent}</p>
@@ -254,9 +253,18 @@ export default function InterviewChat() {
             </div>
             <div className="rounded-2xl px-4 py-3 bg-[#f5f5f7]">
               <div className="flex gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms' }}
+                />
+                <span
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms' }}
+                />
+                <span
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms' }}
+                />
               </div>
             </div>
           </div>
@@ -271,9 +279,7 @@ export default function InterviewChat() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-green-800">Briefen är klar!</p>
-              <p className="text-sm text-green-700">
-                {brief.brief.projectName}
-              </p>
+              <p className="text-sm text-green-700">{brief.brief.projectName}</p>
             </div>
             <div className="flex gap-2">
               <button

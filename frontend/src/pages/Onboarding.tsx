@@ -116,7 +116,8 @@ export default function Onboarding() {
     { key: 'context', label: 'Kontext' },
     { key: 'brief', label: 'Brief' },
   ];
-  const currentStepIndex = step === 'context-choice' || step === 'company-url' || step === 'company-result' ? 0 : 1;
+  const currentStepIndex =
+    step === 'context-choice' || step === 'company-url' || step === 'company-result' ? 0 : 1;
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
@@ -134,13 +135,15 @@ export default function Onboarding() {
       <div className="flex items-center justify-center gap-3 mb-10">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              i < currentStepIndex
-                ? 'bg-green-100 text-green-700'
-                : i === currentStepIndex
-                ? 'bg-[#007AFF] text-white'
-                : 'bg-gray-100 text-gray-400'
-            }`}>
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                i < currentStepIndex
+                  ? 'bg-green-100 text-green-700'
+                  : i === currentStepIndex
+                    ? 'bg-[#007AFF] text-white'
+                    : 'bg-gray-100 text-gray-400'
+              }`}
+            >
               {i < currentStepIndex ? (
                 <Check className="w-4 h-4" />
               ) : (
@@ -149,7 +152,9 @@ export default function Onboarding() {
               {s.label}
             </div>
             {i < steps.length - 1 && (
-              <div className={`w-8 h-0.5 mx-2 ${i < currentStepIndex ? 'bg-green-300' : 'bg-gray-200'}`} />
+              <div
+                className={`w-8 h-0.5 mx-2 ${i < currentStepIndex ? 'bg-green-300' : 'bg-gray-200'}`}
+              />
             )}
           </div>
         ))}
@@ -163,7 +168,8 @@ export default function Onboarding() {
               Ska utbildningen anpassas efter ett företags kontext?
             </h2>
             <p className="text-[#86868b]">
-              Företagskontext gör utbildningen mer relevant med branschspecifika exempel och terminologi.
+              Företagskontext gör utbildningen mer relevant med branschspecifika exempel och
+              terminologi.
             </p>
           </div>
 
@@ -201,9 +207,7 @@ export default function Onboarding() {
       {step === 'company-url' && (
         <div className="space-y-6">
           <div className="text-center mb-6">
-            <h2 className="text-xl font-medium text-[#1d1d1f] mb-2">
-              Ange företagets webbplats
-            </h2>
+            <h2 className="text-xl font-medium text-[#1d1d1f] mb-2">Ange företagets webbplats</h2>
             <p className="text-[#86868b]">
               Vi analyserar webbplatsen för att förstå bransch, målgrupp och tonalitet.
             </p>
@@ -241,9 +245,7 @@ export default function Onboarding() {
               </button>
             </div>
 
-            {error && (
-              <p className="mt-3 text-red-600 text-sm">{error}</p>
-            )}
+            {error && <p className="mt-3 text-red-600 text-sm">{error}</p>}
           </div>
 
           <div className="flex justify-between items-center">
@@ -272,26 +274,28 @@ export default function Onboarding() {
                 <Building2 className="w-6 h-6 text-[#007AFF]" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-semibold text-[#1d1d1f]">
-                  {companyData.company.name}
-                </h2>
+                <h2 className="text-xl font-semibold text-[#1d1d1f]">{companyData.company.name}</h2>
                 <p className="text-[#86868b]">{companyData.company.industry}</p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                companyData.confidence.overall === 'high'
-                  ? 'bg-green-100 text-green-700'
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  companyData.confidence.overall === 'high'
+                    ? 'bg-green-100 text-green-700'
+                    : companyData.confidence.overall === 'medium'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                {companyData.confidence.overall === 'high'
+                  ? 'Hög'
                   : companyData.confidence.overall === 'medium'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-gray-100 text-gray-700'
-              }`}>
-                {companyData.confidence.overall === 'high' ? 'Hög' :
-                 companyData.confidence.overall === 'medium' ? 'Medel' : 'Låg'} konfidens
+                    ? 'Medel'
+                    : 'Låg'}{' '}
+                konfidens
               </span>
             </div>
 
-            <p className="text-[#1d1d1f] mb-5 text-sm">
-              {companyData.company.description}
-            </p>
+            <p className="text-[#1d1d1f] mb-5 text-sm">{companyData.company.description}</p>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="bg-[#f5f5f7] rounded-lg p-3">
@@ -310,7 +314,10 @@ export default function Onboarding() {
               <h3 className="font-medium text-[#1d1d1f] mb-3 text-sm">Nyckelbudskap</h3>
               <div className="flex flex-wrap gap-2">
                 {companyData.brandVoice.keyThemes.slice(0, 5).map((theme, i) => (
-                  <span key={i} className="px-3 py-1 bg-[#f5f5f7] rounded-full text-xs text-[#1d1d1f]">
+                  <span
+                    key={i}
+                    className="px-3 py-1 bg-[#f5f5f7] rounded-full text-xs text-[#1d1d1f]"
+                  >
                     {theme}
                   </span>
                 ))}
@@ -392,7 +399,9 @@ export default function Onboarding() {
 
           <div className="text-center pt-4">
             <button
-              onClick={() => wantsBusinessContext ? setStep('company-result') : setStep('context-choice')}
+              onClick={() =>
+                wantsBusinessContext ? setStep('company-result') : setStep('context-choice')
+              }
               className="text-[#86868b] hover:text-[#1d1d1f] transition-colors text-sm"
             >
               Tillbaka

@@ -88,17 +88,17 @@ router.post('/:projectId/chat', async (req, res, next) => {
         programMatrix: true,
         chapters: {
           include: {
-            sessions: true
+            sessions: true,
           },
-          orderBy: { number: 'asc' }
+          orderBy: { number: 'asc' },
         },
         workflowSteps: {
           where: {
-            step: { in: ['create_program_matrix', 'create_program_design', 'research'] }
-          }
+            step: { in: ['create_program_matrix', 'create_program_design', 'research'] },
+          },
         },
         sourceMaterials: true,
-      }
+      },
     });
 
     if (!project) {
@@ -123,9 +123,12 @@ router.post('/:projectId/chat', async (req, res, next) => {
       desiredOutcomes: project.desiredOutcomes,
       language: project.language,
       particularAngle: project.particularAngle,
-      programMatrix: (project.workflowSteps as WorkflowStep[]).find(
-        (s: WorkflowStep) => s.step === 'create_program_matrix' || s.step === 'create_program_design'
-      )?.result?.substring(0, 5000),
+      programMatrix: (project.workflowSteps as WorkflowStep[])
+        .find(
+          (s: WorkflowStep) =>
+            s.step === 'create_program_matrix' || s.step === 'create_program_design'
+        )
+        ?.result?.substring(0, 5000),
       chapters: (project.chapters as ChapterWithSessions[]).map((c: ChapterWithSessions) => ({
         number: c.number,
         name: c.name,
@@ -133,13 +136,15 @@ router.post('/:projectId/chat', async (req, res, next) => {
         sessions: c.sessions.map((s) => ({
           number: s.number,
           name: s.name,
-          description: s.description
-        }))
+          description: s.description,
+        })),
       })),
-      sourceMaterials: (project.sourceMaterials as SourceMaterial[] | null)?.map((s: SourceMaterial) => ({
-        filename: s.filename,
-        type: s.type
-      }))
+      sourceMaterials: (project.sourceMaterials as SourceMaterial[] | null)?.map(
+        (s: SourceMaterial) => ({
+          filename: s.filename,
+          type: s.type,
+        })
+      ),
     };
 
     // Set up SSE
@@ -167,7 +172,6 @@ router.post('/:projectId/chat', async (req, res, next) => {
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
-
   } catch (error: unknown) {
     const err = error as Error;
     console.error('[Debrief] Chat error:', err.message);
@@ -203,10 +207,10 @@ router.get('/:projectId/sources', async (req, res) => {
       where: { id: projectId },
       include: {
         workflowSteps: {
-          where: { step: 'research' }
+          where: { step: 'research' },
         },
         sourceMaterials: true,
-      }
+      },
     });
 
     if (!project) {
@@ -223,7 +227,7 @@ router.get('/:projectId/sources', async (req, res) => {
     (project.sourceMaterials as SourceMaterial[] | null)?.forEach((sm: SourceMaterial) => {
       sources.push({
         title: sm.filename,
-        excerpt: `Uppladdad kallfil (${sm.type})`
+        excerpt: `Uppladdad kallfil (${sm.type})`,
       });
     });
 
@@ -235,15 +239,18 @@ router.get('/:projectId/sources', async (req, res) => {
         sources.push({
           title: `Webb-kalla ${idx + 1}`,
           url: url,
-          excerpt: url.includes('wikipedia') ? 'Wikipedia' :
-                   url.includes('harvard') ? 'Harvard Business Review' :
-                   url.includes('.gov') ? 'Myndighetskalla' : 'Webbkalla'
+          excerpt: url.includes('wikipedia')
+            ? 'Wikipedia'
+            : url.includes('harvard')
+              ? 'Harvard Business Review'
+              : url.includes('.gov')
+                ? 'Myndighetskalla'
+                : 'Webbkalla',
         });
       });
     }
 
     res.json({ sources });
-
   } catch (error: unknown) {
     const err = error as Error;
     console.error('[Debrief] Sources error:', err.message);

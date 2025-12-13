@@ -44,7 +44,7 @@ Use this context to personalize your questions. Reference the company name, indu
 
         conversations.get(sessionId)!.push({
           role: 'user',
-          content: contextMessage
+          content: contextMessage,
         });
       }
     }
@@ -92,14 +92,13 @@ Use this context to personalize your questions. Reference the company name, indu
           const briefData = JSON.parse(jsonMatch[1]);
           res.write(`data: ${JSON.stringify({ type: 'complete', brief: briefData })}\n\n`);
         }
-      } catch (e) {
+      } catch {
         // JSON parsing failed, interview continues
       }
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
-
   } catch (error: any) {
     console.error('[Interview] Chat error:', error.message);
 

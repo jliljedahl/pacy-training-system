@@ -56,7 +56,10 @@ export default function Login() {
           <div className="flex gap-2 mb-6 bg-[#f5f5f7] rounded-xl p-1">
             <button
               type="button"
-              onClick={() => { setMode('login'); setError(null); }}
+              onClick={() => {
+                setMode('login');
+                setError(null);
+              }}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'login'
                   ? 'bg-white text-[#1d1d1f] shadow-sm'
@@ -67,7 +70,10 @@ export default function Login() {
             </button>
             <button
               type="button"
-              onClick={() => { setMode('signup'); setError(null); }}
+              onClick={() => {
+                setMode('signup');
+                setError(null);
+              }}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'signup'
                   ? 'bg-white text-[#1d1d1f] shadow-sm'
@@ -80,11 +86,13 @@ export default function Login() {
 
           {/* Error/Success Message */}
           {error && (
-            <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 text-sm ${
-              error.includes('Check your email')
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}>
+            <div
+              className={`mb-4 p-3 rounded-lg flex items-center gap-2 text-sm ${
+                error.includes('Check your email')
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}
+            >
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -94,9 +102,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div>
-                <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-                  Name
-                </label>
+                <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b]" />
                   <input
@@ -111,9 +117,7 @@ export default function Login() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b]" />
                 <input
@@ -128,9 +132,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-[#1d1d1f] mb-2">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b]" />
                 <input
@@ -167,7 +169,9 @@ export default function Login() {
               <button
                 type="button"
                 className="text-sm text-[#007AFF] hover:underline"
-                onClick={() => {/* TODO: Implement forgot password */}}
+                onClick={() => {
+                  /* TODO: Implement forgot password */
+                }}
               >
                 Forgot your password?
               </button>
