@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Play, Download, FileText, Edit2, Save, X, MessageSquare } from 'lucide-react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Play, Download, FileText, Edit2, Save, X, MessageSquare, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { projectsApi, workflowApi, contentApi } from '../services/api';
@@ -9,6 +9,8 @@ import MatrixDebrief from '../components/MatrixDebrief';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<string[]>([]);
@@ -26,6 +28,37 @@ export default function ProjectDetail() {
       loadProject();
     }
   }, [id]);
+
+  // Handle createMatrix query param (after debrief approved)
+  useEffect(() => {
+    if (searchParams.get('createMatrix') === 'true' && project?.status === 'matrix_creation' && !project?.programMatrix && !executing) {
+      // Auto-start matrix creation after debrief is approved
+      startMatrixCreation();
+      // Clear the query param
+      navigate(`/projects/${id}`, { replace: true });
+    }
+  }, [searchParams, project?.status, project?.programMatrix, executing]);
+
+  const startMatrixCreation = async () => {
+    if (!id) return;
+
+    setExecuting(true);
+    setProgress([]);
+
+    try {
+      await workflowApi.createMatrix(id, (message) => {
+        setProgress((prev) => [...prev, message]);
+      });
+
+      await loadProject();
+      setActiveTab('matrix');
+    } catch (error: any) {
+      console.error('Matrix creation failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+    } finally {
+      setExecuting(false);
+    }
+  };
 
   const loadProject = async () => {
     try {
@@ -59,37 +92,36 @@ export default function ProjectDetail() {
     }
   };
 
-  const startProgramDesign = async () => {
-    setExecuting(true);
-    setProgress([]);
-
-    try {
-      await workflowApi.executeProgramDesign(id!, (message) => {
-        setProgress((prev) => [...prev, message]);
-      });
-
-      // Reload project to get new data
-      await loadProject();
-      setActiveTab('matrix');
-
-      // Force another reload after a short delay to ensure data is fully saved
-      setTimeout(async () => {
-        await loadProject();
-      }, 1000);
-    } catch (error: any) {
-      console.error('Program design failed:', error);
-      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
-    } finally {
-      setExecuting(false);
-    }
-  };
-
   const approveMatrix = async () => {
     try {
       await workflowApi.approveMatrix(id!);
       await loadProject();
     } catch (error) {
       console.error('Failed to approve matrix:', error);
+    }
+  };
+
+  const [regeneratingMatrix, setRegeneratingMatrix] = useState(false);
+
+  const regenerateMatrix = async (feedback: string) => {
+    if (!id || !feedback.trim()) return;
+
+    setRegeneratingMatrix(true);
+    setProgress([]);
+    setProgress((prev) => [...prev, '🔄 Uppdaterar programmatris baserat på din feedback...']);
+
+    try {
+      await workflowApi.regenerateMatrix(id, feedback, (message) => {
+        setProgress((prev) => [...prev, message]);
+      });
+
+      setProgress((prev) => [...prev, '✅ Matris uppdaterad!']);
+      await loadProject();
+    } catch (error: any) {
+      console.error('Failed to regenerate matrix:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+    } finally {
+      setRegeneratingMatrix(false);
     }
   };
 
@@ -769,17 +801,52 @@ export default function ProjectDetail() {
                 )}
               </div>
 
-              {/* Start Program Design */}
+              {/* Start Debrief Workflow */}
               {project.status === 'information_gathering' && !project.programMatrix && (
                 <div className="pt-6 border-t">
                   <button
-                    onClick={startProgramDesign}
+                    onClick={() => navigate(`/projects/${id}/debrief`)}
+                    className="premium-button text-white flex items-center gap-2"
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                    Starta Research & Debrief
+                  </button>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Nästa steg: Research, debrief med 3 alternativ, sedan programmatris
+                  </p>
+                </div>
+              )}
+
+              {/* Continue to Debrief (if in debrief_review status) */}
+              {project.status === 'debrief_review' && (
+                <div className="pt-6 border-t">
+                  <button
+                    onClick={() => navigate(`/projects/${id}/debrief`)}
+                    className="premium-button text-white flex items-center gap-2"
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                    Fortsätt till Debrief
+                  </button>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Debrief väntar på granskning och godkännande
+                  </p>
+                </div>
+              )}
+
+              {/* Create Matrix (after debrief approved) */}
+              {project.status === 'matrix_creation' && !project.programMatrix && (
+                <div className="pt-6 border-t">
+                  <button
+                    onClick={startMatrixCreation}
                     disabled={executing}
                     className="premium-button text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
                   >
                     <Play className="w-5 h-5" />
-                    {executing ? 'Creating Program Matrix...' : 'Start Program Design'}
+                    {executing ? 'Skapar Programmatris...' : 'Skapa Programmatris'}
                   </button>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Debrief godkänd! Klicka för att skapa programmatrisen.
+                  </p>
                 </div>
               )}
             </div>
@@ -792,8 +859,10 @@ export default function ProjectDetail() {
                 <MatrixDebrief
                   project={project}
                   onApprove={approveMatrix}
+                  onRegenerate={regenerateMatrix}
                   onPrint={printMatrix}
                   onDownload={downloadMatrix}
+                  isRegenerating={regeneratingMatrix}
                 />
               ) : (
                 <p className="text-gray-500">Programmatrisen har inte skapats an.</p>

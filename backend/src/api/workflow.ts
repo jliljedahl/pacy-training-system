@@ -1,9 +1,381 @@
 import { Router } from 'express';
 import { workflowEngine } from '../services/workflowEngine';
 import { workflowEngineOptimized } from '../services/workflowEngineOptimized';
+import { debriefWorkflowService } from '../services/debriefWorkflow';
 import prisma from '../db/client';
 
 const router = Router();
+
+// ============================================
+// NEW DEBRIEF WORKFLOW ROUTES
+// ============================================
+
+/**
+ * Start debrief workflow: Research + Generate debrief with 3 alternatives
+ * GET /api/workflow/projects/:projectId/debrief/start
+ */
+router.get('/projects/:projectId/debrief/start', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      // Step 1: Execute research
+      const researchResult = await debriefWorkflowService.executeResearch(
+        projectId,
+        sendProgress
+      );
+
+      // Step 2: Generate debrief with 3 alternatives
+      const debrief = await debriefWorkflowService.generateDebrief(
+        projectId,
+        researchResult,
+        sendProgress
+      );
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result: debrief })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Get current debrief for a project
+ * GET /api/workflow/projects/:projectId/debrief
+ */
+router.get('/projects/:projectId/debrief', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+
+    const debriefStep = await prisma.workflowStep.findFirst({
+      where: {
+        projectId,
+        step: 'create_debrief',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!debriefStep || !debriefStep.result) {
+      return res.status(404).json({ error: 'No debrief found for this project' });
+    }
+
+    try {
+      const debrief = JSON.parse(debriefStep.result);
+      res.json(debrief);
+    } catch (e) {
+      res.json({ fullDebrief: debriefStep.result });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Submit feedback on debrief (short acknowledgment response)
+ * POST /api/workflow/projects/:projectId/debrief/feedback
+ */
+router.post('/projects/:projectId/debrief/feedback', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { feedback, selectedAlternative } = req.body;
+
+    if (!feedback) {
+      return res.status(400).json({ error: 'Feedback is required' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      const result = await debriefWorkflowService.handleDebriefFeedback(
+        projectId,
+        feedback,
+        selectedAlternative,
+        sendProgress
+      );
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Regenerate debrief based on feedback
+ * POST /api/workflow/projects/:projectId/debrief/regenerate
+ */
+router.post('/projects/:projectId/debrief/regenerate', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { feedback, selectedAlternative } = req.body;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      const debrief = await debriefWorkflowService.regenerateDebrief(
+        projectId,
+        feedback || '',
+        selectedAlternative,
+        sendProgress
+      );
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result: debrief })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Approve debrief and proceed to matrix creation
+ * POST /api/workflow/projects/:projectId/debrief/approve
+ */
+router.post('/projects/:projectId/debrief/approve', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { selectedAlternative } = req.body;
+
+    if (!selectedAlternative) {
+      return res.status(400).json({ error: 'selectedAlternative is required' });
+    }
+
+    await debriefWorkflowService.approveDebrief(projectId, selectedAlternative);
+
+    res.json({
+      message: 'Debrief approved',
+      nextStep: 'matrix_creation',
+      selectedAlternative
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Create program matrix (after debrief is approved)
+ * GET /api/workflow/projects/:projectId/matrix/create
+ */
+router.get('/projects/:projectId/matrix/create', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+
+    // Verify debrief is approved
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    if (project.status !== 'matrix_creation') {
+      return res.status(400).json({
+        error: 'Debrief must be approved before creating matrix',
+        currentStatus: project.status
+      });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      // Get approved debrief to use as context
+      const debriefStep = await prisma.workflowStep.findFirst({
+        where: { projectId, step: 'approve_debrief' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const selectedAlternative = debriefStep?.result
+        ? JSON.parse(debriefStep.result).selectedAlternative
+        : 'A';
+
+      // Use optimized workflow with debrief context
+      const result = await workflowEngineOptimized.executeProgramDesign({
+        projectId,
+        phase: 'program_design',
+        onProgress: sendProgress,
+      });
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Submit feedback on matrix
+ * POST /api/workflow/projects/:projectId/matrix/feedback
+ */
+router.post('/projects/:projectId/matrix/feedback', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { feedback } = req.body;
+
+    if (!feedback) {
+      return res.status(400).json({ error: 'Feedback is required' });
+    }
+
+    // Store feedback
+    await prisma.workflowStep.create({
+      data: {
+        projectId,
+        phase: 'program_design',
+        step: 'matrix_feedback',
+        agentName: 'user',
+        status: 'completed',
+        
+        completedAt: new Date(),
+        result: JSON.stringify({ feedback }),
+      },
+    });
+
+    // Short acknowledgment
+    const acknowledgment = 'Förstått. Jag kommer att justera matrisen baserat på din feedback.';
+
+    res.json({
+      acknowledged: true,
+      message: acknowledgment
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Regenerate matrix based on feedback
+ * POST /api/workflow/projects/:projectId/matrix/regenerate
+ */
+router.post('/projects/:projectId/matrix/regenerate', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { feedback } = req.body;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      sendProgress('🔄 Regenererar matris baserat på feedback...');
+
+      // Get previous matrix CONTENT before deleting
+      const previousMatrixStep = await prisma.workflowStep.findFirst({
+        where: {
+          projectId,
+          step: { in: ['create_program_matrix', 'create_program_design'] }
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      const previousMatrixContent = previousMatrixStep?.result || '';
+
+      // Get previous matrix
+      const previousMatrix = await prisma.programMatrix.findFirst({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Delete old matrix and chapters
+      if (previousMatrix) {
+        await prisma.programMatrix.delete({
+          where: { id: previousMatrix.id },
+        });
+      }
+
+      // Delete old chapters
+      await prisma.chapter.deleteMany({
+        where: { projectId },
+      });
+
+      // Delete old matrix workflow steps to avoid accumulation
+      await prisma.workflowStep.deleteMany({
+        where: {
+          projectId,
+          step: { in: ['create_program_matrix', 'create_program_design'] }
+        },
+      });
+
+      // Store feedback for context
+      await prisma.workflowStep.create({
+        data: {
+          projectId,
+          phase: 'program_design',
+          step: 'matrix_regenerate_request',
+          agentName: 'user',
+          status: 'completed',
+
+          completedAt: new Date(),
+          result: JSON.stringify({ feedback, previousMatrixContent }),
+        },
+      });
+
+      // Regenerate matrix with feedback AND previous content
+      const result = await workflowEngineOptimized.executeProgramDesign({
+        projectId,
+        phase: 'program_design',
+        onProgress: sendProgress,
+        feedback: feedback,
+        previousMatrix: previousMatrixContent,  // Include previous matrix for context
+      });
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// EXISTING ROUTES (Legacy - kept for compatibility)
+// ============================================
 
 // Execute program design phase
 router.get('/projects/:projectId/design', async (req, res, next) => {

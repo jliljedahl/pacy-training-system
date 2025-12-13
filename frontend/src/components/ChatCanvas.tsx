@@ -33,8 +33,11 @@ interface ChatCanvasProps {
   choicePoints?: ChoicePoint[];
   onSendMessage: (message: string) => Promise<string>;
   onApprove?: () => void;
+  onRegenerate?: (feedback: string) => void;
   approveLabel?: string;
+  regenerateLabel?: string;
   isLoading?: boolean;
+  isRegenerating?: boolean;
   initialMessages?: Message[];
 }
 
@@ -46,8 +49,11 @@ export default function ChatCanvas({
   choicePoints = [],
   onSendMessage,
   onApprove,
+  onRegenerate,
   approveLabel = 'Godkann',
+  regenerateLabel = 'Uppdatera innehall',
   isLoading = false,
+  isRegenerating = false,
   initialMessages = [],
 }: ChatCanvasProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -185,14 +191,34 @@ export default function ChatCanvas({
             <h2 className="font-semibold text-[#1d1d1f]">{title}</h2>
             {subtitle && <p className="text-xs text-[#86868b]">{subtitle}</p>}
           </div>
-          {onApprove && (
-            <button
-              onClick={onApprove}
-              disabled={isLoading}
-              className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-            >
-              {approveLabel}
-            </button>
+          {(onRegenerate || onApprove) && (
+            <div className="flex gap-2">
+              {onRegenerate && messages.filter(m => m.role === 'user').length > 0 && (
+                <button
+                  onClick={() => {
+                    // Collect all user messages as feedback
+                    const feedback = messages
+                      .filter(m => m.role === 'user')
+                      .map(m => m.content)
+                      .join('\n\n');
+                    onRegenerate(feedback);
+                  }}
+                  disabled={isRegenerating}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                >
+                  {isRegenerating ? 'Uppdaterar...' : regenerateLabel}
+                </button>
+              )}
+              {onApprove && (
+                <button
+                  onClick={onApprove}
+                  disabled={isLoading || isRegenerating}
+                  className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                >
+                  {approveLabel}
+                </button>
+              )}
+            </div>
           )}
         </div>
 

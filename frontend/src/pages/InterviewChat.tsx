@@ -42,14 +42,18 @@ export default function InterviewChat() {
   const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasStartedRef = useRef(false);
 
   // Get company context from previous step
   const companyContextStr = sessionStorage.getItem('companyContext');
   const companyContext = companyContextStr ? JSON.parse(companyContextStr) : null;
 
-  // Start interview on mount
+  // Start interview on mount (with StrictMode protection)
   useEffect(() => {
-    startInterview();
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true;
+      startInterview();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

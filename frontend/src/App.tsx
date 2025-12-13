@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ProjectList from './pages/ProjectList';
 import CreateProject from './pages/CreateProject';
 import ProjectDetail from './pages/ProjectDetail';
+import DebriefView from './pages/DebriefView';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import InterviewChat from './pages/InterviewChat';
@@ -74,6 +75,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <ProjectDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:projectId/debrief"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DebriefView />
               </Layout>
             </ProtectedRoute>
           }

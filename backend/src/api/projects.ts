@@ -277,7 +277,8 @@ router.post('/', async (req, res, next) => {
         quizQuestions: quizQuestions || 3,
         companyName,
         companyUrl,
-        companyContext,
+        // Stringify companyContext if it's an object
+        companyContext: companyContext ? JSON.stringify(companyContext) : null,
       },
     });
 

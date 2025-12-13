@@ -12,15 +12,19 @@ interface Source {
 interface MatrixDebriefProps {
   project: any;
   onApprove: () => void;
+  onRegenerate: (feedback: string) => void;
   onPrint: () => void;
   onDownload: () => void;
+  isRegenerating?: boolean;
 }
 
 export default function MatrixDebrief({
   project,
   onApprove,
+  onRegenerate,
   onPrint,
   onDownload,
+  isRegenerating = false,
 }: MatrixDebriefProps) {
   const [sources, setSources] = useState<Source[]>([]);
   const [, setLoadingSources] = useState(true);
@@ -41,10 +45,12 @@ export default function MatrixDebrief({
     }
   };
 
-  // Get matrix content from workflow steps
-  const matrixContent = project.workflowSteps
-    ?.find((s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design')
-    ?.result || 'Matrisen har inte skapats an...';
+  // Get matrix content from workflow steps (use the LATEST one, not the first)
+  const matrixWorkflowSteps = project.workflowSteps
+    ?.filter((s: any) => s.step === 'create_program_matrix' || s.step === 'create_program_design') || [];
+  const matrixContent = matrixWorkflowSteps.length > 0
+    ? matrixWorkflowSteps[matrixWorkflowSteps.length - 1]?.result || 'Matrisen har inte skapats an...'
+    : 'Matrisen har inte skapats an...';
 
   // Handle chat messages
   const handleSendMessage = async (message: string): Promise<string> => {
@@ -134,12 +140,15 @@ export default function MatrixDebrief({
         sources={sources}
         onSendMessage={handleSendMessage}
         onApprove={onApprove}
+        onRegenerate={onRegenerate}
         approveLabel="Godkann programmatris"
+        regenerateLabel="Uppdatera matris"
+        isRegenerating={isRegenerating}
         initialMessages={[
           {
             id: 'welcome',
             role: 'assistant',
-            content: `Jag har skapat en programmatris for "${project.name}". Den innehaller ${project.chapters?.length || 0} kapitel med totalt ${project.chapters?.reduce((sum: number, c: any) => sum + (c.sessions?.length || 0), 0) || 0} sessioner.\n\nGranska innehallet till hoger och stall garna fragor om du undrar over nagon del av strukturen eller innehallet.`,
+            content: `Jag har skapat en programmatris for "${project.name}". Den innehaller ${project.chapters?.length || 0} kapitel med totalt ${project.chapters?.reduce((sum: number, c: any) => sum + (c.sessions?.length || 0), 0) || 0} sessioner.\n\nGranska innehallet till hoger och stall garna fragor. Nar du ar nojd, klicka "Godkann programmatris". Om du vill att jag andrar nagot, beskriv vad och klicka sedan "Uppdatera matris".`,
             timestamp: new Date(),
           },
         ]}

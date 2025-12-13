@@ -13,6 +13,8 @@ export interface WorkflowContext {
   projectId: string;
   phase: WorkflowPhase;
   onProgress?: (message: string) => void;
+  feedback?: string;  // User feedback for regeneration
+  previousMatrix?: string;  // Previous matrix content for context when regenerating
 }
 
 export class WorkflowEngineOptimized {
@@ -21,7 +23,7 @@ export class WorkflowEngineOptimized {
    * Uses fewer agents, only when needed
    */
   async executeProgramDesign(context: WorkflowContext): Promise<any> {
-    const { projectId, onProgress } = context;
+    const { projectId, onProgress, feedback, previousMatrix } = context;
 
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -68,6 +70,37 @@ Strict Fidelity Required: ${project.strictFidelity}
 
 Note: Analyze these materials and incorporate their insights.
 ` : 'No source materials provided - base content on research and best practices.'}
+
+${(feedback && previousMatrix) ? `
+⚠️ VIKTIGT - DETTA ÄR EN UPPDATERING AV EN BEFINTLIG MATRIS ⚠️
+
+BEFINTLIG MATRIS SOM SKA UPPDATERAS:
+"""
+${previousMatrix}
+"""
+
+ANVÄNDARENS FEEDBACK (ÄNDRINGAR SOM SKA GÖRAS):
+"""
+${feedback}
+"""
+
+INSTRUKTIONER:
+1. Använd den befintliga matrisen som UTGÅNGSPUNKT
+2. Gör ENDAST de ändringar som användaren begärt i sin feedback
+3. Behåll allt annat innehåll OFÖRÄNDRAT
+4. Om användaren ber om att ta bort något (t.ex. "ta bort Codex"), se till att det INTE finns kvar någonstans i den nya matrisen
+5. Dubbelkolla att ändringarna faktiskt är implementerade innan du returnerar resultatet
+
+` : (feedback ? `
+⚠️ VIKTIGT - ANVÄNDAREN HAR GETT FEEDBACK ⚠️
+Denna matris ska skapas baserat på följande feedback från användaren:
+
+"""
+${feedback}
+"""
+
+Du MÅSTE implementera dessa önskemål i matrisen.
+` : '')}
 
 YOUR TASK:
 Create a complete Program Matrix for approval. This should include:

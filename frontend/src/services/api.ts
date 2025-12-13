@@ -161,7 +161,7 @@ export const projectsApi = {
   },
 };
 
-// Helper to create SSE promise with auth
+// Helper to create SSE promise with auth (GET requests)
 function createSSEPromise(url: string, onProgress?: (message: string) => void) {
   return new Promise((resolve, reject) => {
     const abort = createAuthenticatedEventSource(
@@ -182,7 +182,123 @@ function createSSEPromise(url: string, onProgress?: (message: string) => void) {
   });
 }
 
+// Helper to create SSE promise for POST requests
+async function createSSEPostPromise(
+  url: string,
+  body: any,
+  onProgress?: (message: string) => void
+): Promise<any> {
+  const token = await getAuthToken();
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No reader');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let result: any = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === 'progress' && onProgress) {
+            onProgress(data.message);
+          } else if (data.type === 'complete') {
+            result = data.result;
+          } else if (data.type === 'error') {
+            throw new Error(data.message);
+          }
+        } catch (e: any) {
+          if (e.message && !e.message.includes('JSON')) {
+            throw e;
+          }
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export const workflowApi = {
+  // ============================================
+  // NEW DEBRIEF WORKFLOW
+  // ============================================
+
+  // Start debrief workflow (research + generate debrief with 3 alternatives)
+  startDebrief: (projectId: string, onProgress: (message: string) => void) =>
+    createSSEPromise(`/api/workflow/projects/${projectId}/debrief/start`, onProgress),
+
+  // Get current debrief
+  getDebrief: (projectId: string) => api.get(`/workflow/projects/${projectId}/debrief`),
+
+  // Submit feedback on debrief (returns short acknowledgment)
+  submitDebriefFeedback: async (
+    projectId: string,
+    feedback: string,
+    selectedAlternative?: string,
+    onProgress?: (message: string) => void
+  ) => {
+    const url = `/api/workflow/projects/${projectId}/debrief/feedback`;
+    return createSSEPostPromise(url, { feedback, selectedAlternative }, onProgress);
+  },
+
+  // Regenerate debrief based on feedback
+  regenerateDebrief: (
+    projectId: string,
+    feedback: string,
+    selectedAlternative?: string,
+    onProgress?: (message: string) => void
+  ) => createSSEPostPromise(
+    `/api/workflow/projects/${projectId}/debrief/regenerate`,
+    { feedback, selectedAlternative },
+    onProgress
+  ),
+
+  // Approve debrief and proceed to matrix
+  approveDebrief: (projectId: string, selectedAlternative: string) =>
+    api.post(`/workflow/projects/${projectId}/debrief/approve`, { selectedAlternative }),
+
+  // Create matrix (after debrief approved)
+  createMatrix: (projectId: string, onProgress: (message: string) => void) =>
+    createSSEPromise(`/api/workflow/projects/${projectId}/matrix/create`, onProgress),
+
+  // Submit feedback on matrix
+  submitMatrixFeedback: (projectId: string, feedback: string) =>
+    api.post(`/workflow/projects/${projectId}/matrix/feedback`, { feedback }),
+
+  // Regenerate matrix based on feedback
+  regenerateMatrix: (projectId: string, feedback: string, onProgress: (message: string) => void) =>
+    createSSEPostPromise(
+      `/api/workflow/projects/${projectId}/matrix/regenerate`,
+      { feedback },
+      onProgress
+    ),
+
+  // ============================================
+  // LEGACY ROUTES (kept for compatibility)
+  // ============================================
+
   executeProgramDesign: (projectId: string, onProgress: (message: string) => void) =>
     createSSEPromise(`/api/workflow/projects/${projectId}/design`, onProgress),
 
