@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "HIST-based micro-learning content creation system with AI sub-agents",
   "private": true,
+  "type": "module",
   "workspaces": [
     "backend",
     "frontend",
@@ -14,10 +15,24 @@
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
-    "start": "npm run start --workspace=backend"
+    "start": "npm run start --workspace=backend",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck:backend": "cd backend && npx tsc --noEmit",
+    "typecheck:frontend": "cd frontend && npx tsc --noEmit"
   },
   "devDependencies": {
+    "@eslint/js": "^9.15.0",
     "concurrently": "^8.2.2",
-    "typescript": "^5.3.3"
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "prettier": "^3.4.2",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.15.0"
   }
 }
