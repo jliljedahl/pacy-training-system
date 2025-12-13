@@ -41,7 +41,7 @@ export function createAuthenticatedEventSource(
   onMessage: (data: any) => void,
   onError: (error: Error) => void
 ): () => void {
-  let abortController = new AbortController();
+  const abortController = new AbortController();
 
   (async () => {
     try {

@@ -229,7 +229,7 @@ router.get('/:projectId/sources', async (req, res) => {
 
     // Try to extract web sources from research result
     if (researchStep?.result) {
-      const urlPattern = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g;
+      const urlPattern = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
       const urls = researchStep.result.match(urlPattern) || [];
       urls.slice(0, 10).forEach((url: string, idx: number) => {
         sources.push({

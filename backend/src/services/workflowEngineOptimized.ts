@@ -378,7 +378,7 @@ Verify factual accuracy, source citations, and ${project.strictFidelity ? 'stric
 Only report issues you cannot fix automatically.
 `;
 
-    let factCheck = await agentOrchestrator.invokeAgent(
+    const factCheck = await agentOrchestrator.invokeAgent(
       'fact-checker',
       factPrompt,
       { article: articleResult, project },

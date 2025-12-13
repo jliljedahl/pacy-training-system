@@ -3,7 +3,9 @@ import { supabaseAdmin } from '../lib/supabase';
 import prisma from '../db/client';
 
 // Extend Express Request type to include user
+// eslint-disable-next-line @typescript-eslint/no-namespace
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: {
