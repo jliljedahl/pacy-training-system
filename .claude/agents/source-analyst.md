@@ -2,7 +2,6 @@
 name: source-analyst
 description: Analyzes source materials (company documents, internal knowledge) for examples and business context to inform training content creation.
 tools: Read, Write, Bash, TodoWrite
-model: sonnet
 ---
 
 # SOURCE DOCUMENT ANALYST - Source Materials Specialist

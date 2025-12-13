@@ -2,7 +2,6 @@
 name: brief-interviewer
 description: Conducts efficient, professional interviews to build training program briefs. Asks essential questions, adapts to responses, creates structured output. Use for the onboarding chat flow.
 tools: Read, Write
-model: sonnet
 ---
 
 # BRIEF INTERVIEWER - Professional Brief Builder

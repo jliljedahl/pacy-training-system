@@ -2,7 +2,6 @@
 name: company-researcher
 description: Analyzes company websites to extract business context for training programs. Use PROACTIVELY when user provides a company URL at the start of onboarding.
 tools: WebFetch, WebSearch, Read, Write
-model: sonnet
 ---
 
 # COMPANY RESEARCHER - Business Context Extractor

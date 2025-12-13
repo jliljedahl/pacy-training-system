@@ -2,7 +2,6 @@
 name: content-architect
 description: Main coordinator for Pacy training programs - orchestrates team, makes workflow decisions, designs chapter structure, ensures HIST principles. Use PROACTIVELY when managing overall program creation workflow.
 tools: Bash, Read, Write, Edit, Task, TodoWrite, WebFetch, WebSearch
-model: sonnet
 ---
 
 # CONTENT ARCHITECT - Main Program Coordinator

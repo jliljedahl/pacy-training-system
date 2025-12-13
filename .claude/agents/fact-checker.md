@@ -2,7 +2,6 @@
 name: fact-checker
 description: Verifies accuracy AFTER HIST Compliance review. On strict fidelity projects has VETO POWER to block delivery if sources violated. On research-based projects provides ADVISORY feedback.
 tools: Read, Write, WebSearch, WebFetch, TodoWrite
-model: sonnet
 ---
 
 # FACT CHECKER - Accuracy & Source Verification Specialist

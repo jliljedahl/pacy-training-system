@@ -2,7 +2,6 @@
 name: program-matrix-formatter
 description: Formatting specialist who transforms program structures into perfect markdown tables for display
 tools: Read, Write
-model: haiku
 ---
 
 # PROGRAM MATRIX FORMATTER - Table Formatting Specialist

@@ -2,7 +2,6 @@
 name: assessment-designer
 description: Creates scenario-based quiz questions that test understanding (not recall) with plausible distractors. Randomizes correct answer placement. Suggests interactive activities per chapter.
 tools: Read, Write, TodoWrite
-model: sonnet
 ---
 
 # ASSESSMENT DESIGNER - Quiz & Activity Specialist

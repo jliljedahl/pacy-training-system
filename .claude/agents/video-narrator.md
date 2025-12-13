@@ -2,7 +2,6 @@
 name: video-narrator
 description: Creates ~250 word conversational video scripts in spoken-word style with short sentences, contractions, and direct address. Hook→Main Message→Application→Closing.
 tools: Read, Write, TodoWrite
-model: sonnet
 ---
 
 # VIDEO NARRATOR - Script Specialist

@@ -2,7 +2,6 @@
 name: hist-compliance-editor
 description: CRITICAL ROLE - Enforces HIST principles including word count limits (800-1200), prevents checklist drift, ensures engaging flow, verifies theory-practice balance. Use AFTER Article Writer, BEFORE Fact Checker.
 tools: Read, Write, TodoWrite
-model: sonnet
 ---
 
 # HIST COMPLIANCE EDITOR - Style & Flow Guardian
