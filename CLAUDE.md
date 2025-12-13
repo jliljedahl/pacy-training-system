@@ -25,7 +25,19 @@ npm run dev:frontend
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, React Router |
 | Backend | Node.js, Express, TypeScript, Prisma ORM |
 | Database | SQLite (dev) → Supabase PostgreSQL (prod) |
-| AI | Anthropic Claude API (Sonnet 4 for agents) |
+| AI | OpenAI API |
+
+## OpenAI Models
+
+```typescript
+// config/models.ts
+export const OPENAI_MODELS = {
+  thinking: "gpt-5.2",           // For reasoning tasks (content-architect, research-director, hist-compliance-editor)
+  fast: "gpt-5.2-chat-latest",   // For standard tasks (article-writer, fact-checker, source-analyst)
+  coding: "gpt-5-codex",         // For code generation
+  cheap: "gpt-4.1-mini"          // For simple/batch tasks (video-narrator, assessment-designer)
+}
+```
 
 ## Project Structure
 
@@ -112,7 +124,7 @@ GET    /api/workflow/projects/:id/quizzes/batch       # Batch all quizzes
 ```bash
 # backend/.env
 DATABASE_URL="file:./dev.db"
-ANTHROPIC_API_KEY="sk-ant-..."
+OPENAI_API_KEY="sk-..."
 UPLOAD_DIR="./uploads"
 PORT=3001
 ```

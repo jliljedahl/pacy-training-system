@@ -2,7 +2,7 @@
  * Model Configuration for Pacy Training System
  *
  * All content creation agents use OpenAI models.
- * GPT-5.2 for thinking/reasoning tasks, GPT-5.2-instant for standard tasks.
+ * See CLAUDE.md for model reference.
  */
 
 export type ModelProvider = 'openai' | 'anthropic';
@@ -14,66 +14,76 @@ export interface ModelConfig {
   isReasoningModel?: boolean;
 }
 
+// OpenAI model constants
+const MODELS = {
+  thinking: 'gpt-5.2',            // For reasoning tasks
+  fast: 'gpt-5.2-chat-latest',    // For standard tasks
+  coding: 'gpt-5-codex',          // For code generation
+  cheap: 'gpt-4.1-mini',          // For simple/batch tasks
+};
+
 // Agent model configurations - all using OpenAI
 export const agentModels: Record<string, ModelConfig> = {
-  // Thinking/reasoning tasks - GPT-5.2
+  // Thinking/reasoning tasks - gpt-5.2
   'content-architect': {
     provider: 'openai',
-    model: 'gpt-5.2',
+    model: MODELS.thinking,
     maxTokens: 16384,
   },
   'research-director': {
     provider: 'openai',
-    model: 'gpt-5.2',
+    model: MODELS.thinking,
     maxTokens: 16384,
   },
   'hist-compliance-editor': {
     provider: 'openai',
-    model: 'gpt-5.2',
+    model: MODELS.thinking,
     maxTokens: 8192,
   },
 
-  // Standard tasks - GPT-5.2-instant
+  // Standard tasks - gpt-5.2-chat-latest
   'article-writer': {
     provider: 'openai',
-    model: 'gpt-5.2-instant',
-    maxTokens: 4096,
-  },
-  'article-writer-batch': {
-    provider: 'openai',
-    model: 'gpt-5.2-instant',
+    model: MODELS.fast,
     maxTokens: 4096,
   },
   'fact-checker': {
     provider: 'openai',
-    model: 'gpt-5.2-instant',
+    model: MODELS.fast,
     maxTokens: 2048,
   },
   'source-analyst': {
     provider: 'openai',
-    model: 'gpt-5.2-instant',
+    model: MODELS.fast,
+    maxTokens: 4096,
+  },
+  'brief-interviewer': {
+    provider: 'openai',
+    model: MODELS.fast,
+    maxTokens: 1024,
+  },
+
+  // Simple/batch tasks - gpt-4.1-mini
+  'article-writer-batch': {
+    provider: 'openai',
+    model: MODELS.cheap,
     maxTokens: 4096,
   },
   'video-narrator': {
     provider: 'openai',
-    model: 'gpt-5.2-instant',
+    model: MODELS.cheap,
     maxTokens: 1024,
   },
   'assessment-designer': {
     provider: 'openai',
-    model: 'gpt-5.2-instant',
+    model: MODELS.cheap,
     maxTokens: 2048,
-  },
-  'brief-interviewer': {
-    provider: 'openai',
-    model: 'gpt-5.2-instant',
-    maxTokens: 1024,
   },
 
   // Default fallback
   'default': {
     provider: 'openai',
-    model: 'gpt-5.2-instant',
+    model: MODELS.fast,
     maxTokens: 4096,
   },
 };

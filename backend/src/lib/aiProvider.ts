@@ -42,7 +42,32 @@ export interface StreamOptions extends CompletionOptions {
 }
 
 /**
- * Check if a model is an o1 reasoning model
+ * Check if a model is a new-generation model (GPT-5.x, o1)
+ * These models have different API requirements
+ */
+function isNewGenerationModel(model: string): boolean {
+  return model.startsWith('o1') ||
+         model.startsWith('gpt-5') ||
+         model.includes('gpt-5');
+}
+
+/**
+ * Check if a model requires max_completion_tokens instead of max_tokens
+ */
+function usesMaxCompletionTokens(model: string): boolean {
+  return isNewGenerationModel(model);
+}
+
+/**
+ * Check if a model supports custom temperature
+ * New generation models only support default temperature (1)
+ */
+function supportsTemperature(model: string): boolean {
+  return !isNewGenerationModel(model);
+}
+
+/**
+ * Check if a model is an o1 reasoning model (uses developer role)
  */
 function isReasoningModel(config: ModelConfig): boolean {
   return config.isReasoningModel === true || config.model.startsWith('o1');
@@ -70,12 +95,27 @@ export async function getCompletion(options: CompletionOptions): Promise<Complet
     })),
   ];
 
-  const response = await openai.chat.completions.create({
+  const maxTokens = options.maxTokens || config.maxTokens || 4096;
+
+  // Build request params based on model requirements
+  const requestParams: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
     model: config.model,
     messages,
-    max_tokens: options.maxTokens || config.maxTokens || 4096,
-    temperature: options.temperature ?? 0.7,
-  });
+  };
+
+  // Only set temperature for models that support it
+  if (supportsTemperature(config.model)) {
+    requestParams.temperature = options.temperature ?? 0.7;
+  }
+
+  // Use max_completion_tokens for newer models, max_tokens for older ones
+  if (usesMaxCompletionTokens(config.model)) {
+    requestParams.max_completion_tokens = maxTokens;
+  } else {
+    requestParams.max_tokens = maxTokens;
+  }
+
+  const response = await openai.chat.completions.create(requestParams);
 
   const content = response.choices[0]?.message?.content || '';
 
@@ -156,13 +196,28 @@ export async function getStreamingCompletion(options: StreamOptions): Promise<Co
     })),
   ];
 
-  const stream = await openai.chat.completions.create({
+  const maxTokens = options.maxTokens || config.maxTokens || 4096;
+
+  // Build request params based on model requirements
+  const requestParams: OpenAI.Chat.ChatCompletionCreateParamsStreaming = {
     model: config.model,
     messages,
-    max_tokens: options.maxTokens || config.maxTokens || 4096,
-    temperature: options.temperature ?? 0.7,
     stream: true,
-  });
+  };
+
+  // Only set temperature for models that support it
+  if (supportsTemperature(config.model)) {
+    requestParams.temperature = options.temperature ?? 0.7;
+  }
+
+  // Use max_completion_tokens for newer models, max_tokens for older ones
+  if (usesMaxCompletionTokens(config.model)) {
+    requestParams.max_completion_tokens = maxTokens;
+  } else {
+    requestParams.max_tokens = maxTokens;
+  }
+
+  const stream = await openai.chat.completions.create(requestParams);
 
   let fullContent = '';
   let inputTokens = 0;
