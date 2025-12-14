@@ -367,6 +367,158 @@ router.post('/projects/:projectId/matrix/regenerate', async (req, res, next) => 
   }
 });
 
+/**
+ * Regenerate article based on feedback
+ * POST /api/workflow/articles/:articleId/regenerate
+ */
+router.post('/articles/:articleId/regenerate', async (req, res, next) => {
+  try {
+    const { articleId } = req.params;
+    const { feedback } = req.body;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      sendProgress('🔄 Regenererar artikel baserat på feedback...');
+
+      // Get the article and related data
+      const article = await prisma.article.findUnique({
+        where: { id: articleId },
+        include: {
+          session: {
+            include: {
+              chapter: {
+                include: {
+                  project: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!article) {
+        throw new Error('Article not found');
+      }
+
+      const projectId = article.session.chapter.projectId;
+
+      // Store previous content and feedback
+      const previousContent = article.content;
+      await prisma.workflowStep.create({
+        data: {
+          projectId,
+          phase: 'content_creation',
+          step: 'article_regenerate_request',
+          agentName: 'user',
+          status: 'completed',
+          completedAt: new Date(),
+          result: JSON.stringify({ feedback, previousContent, articleId }),
+        },
+      });
+
+      // Regenerate the article using the workflow engine
+      const result = await workflowEngineOptimized.createArticle({
+        projectId,
+        sessionId: article.sessionId,
+        onProgress: sendProgress,
+        feedback: feedback,
+        previousContent: previousContent,
+      });
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Regenerate video script based on feedback
+ * POST /api/workflow/videos/:videoId/regenerate
+ */
+router.post('/videos/:videoId/regenerate', async (req, res, next) => {
+  try {
+    const { videoId } = req.params;
+    const { feedback } = req.body;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      sendProgress('🔄 Regenererar videonarrativ baserat på feedback...');
+
+      // Get the video script and related data
+      const video = await prisma.videoScript.findUnique({
+        where: { id: videoId },
+        include: {
+          session: {
+            include: {
+              chapter: {
+                include: {
+                  project: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!video) {
+        throw new Error('Video script not found');
+      }
+
+      const projectId = video.session.chapter.projectId;
+
+      // Store previous content and feedback
+      const previousContent = video.content;
+      await prisma.workflowStep.create({
+        data: {
+          projectId,
+          phase: 'content_creation',
+          step: 'video_regenerate_request',
+          agentName: 'user',
+          status: 'completed',
+          completedAt: new Date(),
+          result: JSON.stringify({ feedback, previousContent, videoId }),
+        },
+      });
+
+      // Regenerate the video script using the workflow engine
+      const result = await workflowEngineOptimized.createVideoScript({
+        projectId,
+        sessionId: video.sessionId,
+        onProgress: sendProgress,
+        feedback: feedback,
+        previousContent: previousContent,
+      });
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ============================================
 // EXISTING ROUTES (Legacy - kept for compatibility)
 // ============================================

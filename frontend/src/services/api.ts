@@ -300,6 +300,18 @@ export const workflowApi = {
       onProgress
     ),
 
+  // Regenerate article based on feedback
+  regenerateArticle: (articleId: string, feedback: string, onProgress: (message: string) => void) =>
+    createSSEPostPromise(
+      `/api/workflow/articles/${articleId}/regenerate`,
+      { feedback },
+      onProgress
+    ),
+
+  // Regenerate video script based on feedback
+  regenerateVideo: (videoId: string, feedback: string, onProgress: (message: string) => void) =>
+    createSSEPostPromise(`/api/workflow/videos/${videoId}/regenerate`, { feedback }, onProgress),
+
   // ============================================
   // LEGACY ROUTES (kept for compatibility)
   // ============================================
