@@ -237,7 +237,10 @@ export default function TableOfContents({
                                   ) : (
                                     <div className="prose prose-slate prose-sm max-w-none break-words overflow-hidden text-[#1d1d1f]">
                                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {session.article.content}
+                                        {session.article.content
+                                          .replace(/^```markdown\n/, '')
+                                          .replace(/^```\n/, '')
+                                          .replace(/\n```$/, '')}
                                       </ReactMarkdown>
                                     </div>
                                   )}

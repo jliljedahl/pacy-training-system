@@ -1257,7 +1257,10 @@ export default function ProjectDetail() {
                                   </div>
                                   <div className="prose prose-slate max-w-none break-words overflow-hidden">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                      {session.article.content}
+                                      {session.article.content
+                                        .replace(/^```markdown\n/, '')
+                                        .replace(/^```\n/, '')
+                                        .replace(/\n```$/, '')}
                                     </ReactMarkdown>
                                   </div>
                                 </>

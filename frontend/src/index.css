@@ -132,3 +132,36 @@ code {
 .prose table td:nth-child(4) {
   width: 25%;
 }
+
+/* Article content styling - override prose defaults */
+.prose pre {
+  background-color: #f5f5f7 !important;
+  color: #1d1d1f !important;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.prose code {
+  background-color: #f5f5f7 !important;
+  color: #c7254e !important;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.prose pre code {
+  background-color: transparent !important;
+  color: inherit !important;
+  padding: 0;
+}
+
+/* Ensure normal text stays normal */
+.prose p,
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose li {
+  color: #1d1d1f !important;
+  background-color: transparent !important;
+}

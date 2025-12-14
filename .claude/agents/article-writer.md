@@ -55,7 +55,8 @@ Create articles that are:
 
 ## ARTICLE STRUCTURE
 
-```markdown
+Return the article in plain markdown format (do NOT wrap in code fences):
+
 # [Session X.X]: [Engaging Title]
 
 [OPENING - 2-3 paragraphs, ~150 words]
@@ -91,7 +92,6 @@ Word count: XXX
 
 Källor:
 [Academic format references - see Source Format section below]
-```
 
 ## SPECIAL ARTICLE TYPES
 
