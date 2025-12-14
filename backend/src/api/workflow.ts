@@ -1198,6 +1198,129 @@ router.post('/quizzes/:quizId/approve', async (req, res, next) => {
   }
 });
 
+// ============================================
+// AI EXERCISE ROUTES
+// ============================================
+
+// Create single AI exercise for a session
+router.get('/sessions/:sessionId/exercise', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: { chapter: true, article: true },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (!session.article) {
+      return res.status(400).json({ error: 'Article must be created before exercise' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      const result = await workflowEngineOptimized.executeExerciseCreation(
+        {
+          projectId: session.chapter.projectId,
+          phase: 'exercise_creation',
+          onProgress: sendProgress,
+        },
+        sessionId
+      );
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Batch generate ALL AI exercises
+router.get('/projects/:projectId/exercises/batch', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (message: string) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+    };
+
+    try {
+      const result = await workflowEngineOptimized.executeBatchExerciseCreation({
+        projectId,
+        phase: 'exercise_creation',
+        onProgress: sendProgress,
+      });
+
+      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Approve AI exercise
+router.post('/exercises/:exerciseId/approve', async (req, res, next) => {
+  try {
+    const { exerciseId } = req.params;
+
+    const exercise = await prisma.aIExercise.update({
+      where: { id: exerciseId },
+      data: { approved: true, approvedAt: new Date() },
+    });
+
+    res.json(exercise);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Save feedback for AI exercise
+router.post('/exercises/:exerciseId/feedback', async (req, res, next) => {
+  try {
+    const { exerciseId } = req.params;
+    const { feedback } = req.body;
+
+    const exercise = await prisma.aIExercise.update({
+      where: { id: exerciseId },
+      data: { feedback },
+    });
+
+    res.json({ message: 'Feedback saved', exercise });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get workflow progress
 router.get('/projects/:projectId/progress', async (req, res, next) => {
   try {

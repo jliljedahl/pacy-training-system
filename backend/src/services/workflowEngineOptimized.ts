@@ -7,6 +7,7 @@ export type WorkflowPhase =
   | 'article_creation'
   | 'video_creation'
   | 'quiz_creation'
+  | 'exercise_creation'
   | 'completed';
 
 export interface WorkflowContext {
@@ -1249,6 +1250,242 @@ Requirements:
 
     onProgress?.(
       `✅ Batch quiz generation complete! Created ${results.filter((r) => !r.error).length} quizzes.`
+    );
+
+    return {
+      total: sessions.length,
+      created: results.filter((r) => !r.error).length,
+      failed: results.filter((r) => r.error).length,
+      results,
+    };
+  }
+
+  /**
+   * OPTIMIZED Phase 5: AI Exercise Creation
+   * Creates interactive exercises designed for AI mentor facilitation
+   */
+  async executeExerciseCreation(context: WorkflowContext, sessionId: string): Promise<any> {
+    const { projectId, onProgress } = context;
+
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: {
+        article: true,
+        chapter: {
+          include: {
+            project: true,
+          },
+        },
+      },
+    });
+
+    if (!session || !session.article) {
+      throw new Error('Article must exist before creating exercise');
+    }
+
+    const project = session.chapter.project;
+
+    onProgress?.(`🎮 Creating AI exercise for Session ${session.number}...`);
+
+    const exerciseStep = await this.createWorkflowStep(
+      projectId,
+      'exercise_creation',
+      `create_exercise_${sessionId}`,
+      'ai-exercise-designer'
+    );
+
+    const exercisePrompt = `
+Create ONE interactive AI exercise for this session.
+
+SESSION: ${session.number} - ${session.name}
+
+LEARNING OBJECTIVE (WIIFM):
+${session.wiifm}
+
+SESSION DESCRIPTION:
+${session.description}
+
+ARTICLE CONTENT:
+${session.article.content}
+
+TARGET AUDIENCE:
+${project.targetAudience || 'Professional learners'}
+
+${
+  project.companyContext
+    ? `
+BUSINESS CONTEXT:
+${project.companyContext}
+
+Use this context to make the scenario feel relevant to their specific work environment.
+`
+    : ''
+}
+
+REQUIREMENTS:
+- Create ONE exercise that trains practical application
+- Exercise should take 3-10 minutes
+- Must be usable by an AI mentor for roleplay/facilitation
+- Scenario must feel realistic ("this could happen at my job")
+- Output in the exact format specified in your instructions
+
+Focus on: What decision, response, or action would demonstrate that the learner can APPLY what they learned?
+`;
+
+    const exerciseResult = await agentOrchestrator.invokeAgent(
+      'ai-exercise-designer',
+      exercisePrompt,
+      { project, session },
+      onProgress
+    );
+
+    await this.completeWorkflowStep(exerciseStep.id, exerciseResult);
+
+    // Parse the exercise from the result
+    const exercise = this.parseExerciseResult(exerciseResult, session);
+
+    // Check if exercise already exists
+    const existingExercise = await prisma.aIExercise.findUnique({
+      where: { sessionId },
+    });
+
+    const aiExercise = existingExercise
+      ? await prisma.aIExercise.update({
+          where: { sessionId },
+          data: exercise,
+        })
+      : await prisma.aIExercise.create({
+          data: {
+            sessionId,
+            ...exercise,
+          },
+        });
+
+    onProgress?.(`✅ AI exercise created!`);
+
+    return { exerciseId: aiExercise.id, exercise: exerciseResult };
+  }
+
+  /**
+   * Parse exercise result from agent response
+   */
+  private parseExerciseResult(result: string, session: any) {
+    // Extract title
+    const titleMatch = result.match(/###?\s*Titel\s*\n+([^\n]+)/i);
+    const title = titleMatch ? titleMatch[1].trim() : `Exercise for ${session.name}`;
+
+    // Extract purpose
+    const purposeMatch = result.match(/###?\s*Syfte\s*\n+([\s\S]*?)(?=###|\n\n###|$)/i);
+    const purpose = purposeMatch ? purposeMatch[1].trim().substring(0, 500) : session.wiifm;
+
+    // Extract scenario
+    const scenarioMatch = result.match(/###?\s*Scenario\s*\n+([\s\S]*?)(?=###|\n\n###|$)/i);
+    const scenario = scenarioMatch ? scenarioMatch[1].trim() : '';
+
+    // Extract task
+    const taskMatch = result.match(/###?\s*Din uppgift\s*\n+([\s\S]*?)(?=###|\n\n###|$)/i);
+    const task = taskMatch ? taskMatch[1].trim() : '';
+
+    // Extract learning objectives
+    const objectivesMatch = result.match(
+      /###?\s*Learning objectives.*?\n+([\s\S]*?)(?=###|\n\n###|$)/i
+    );
+    const objectives = objectivesMatch ? objectivesMatch[1].trim() : session.wiifm;
+
+    // Extract AI mentor guidance
+    const rolesMatch = result.match(/Roller att spela[:\s]*(.*?)(?:\n|$)/i);
+    const rolesToPlay = rolesMatch ? rolesMatch[1].trim() : null;
+
+    const criteriaMatch = result.match(/Utvärderingskriterier[:\s]*([\s\S]*?)(?=\*\*|###|$)/i);
+    const evaluationCriteria = criteriaMatch ? criteriaMatch[1].trim() : null;
+
+    const followUpMatch = result.match(/Uppföljningsfrågor[:\s]*([\s\S]*?)(?=```|###|$)/i);
+    const followUpQuestions = followUpMatch ? followUpMatch[1].trim() : null;
+
+    // Determine exercise type
+    let exerciseType = 'decision';
+    const lowerResult = result.toLowerCase();
+    if (lowerResult.includes('rollspel') || lowerResult.includes('roleplay')) {
+      exerciseType = 'roleplay';
+    } else if (lowerResult.includes('planera') || lowerResult.includes('planning')) {
+      exerciseType = 'planning';
+    } else if (lowerResult.includes('formulera') || lowerResult.includes('response')) {
+      exerciseType = 'response';
+    } else if (lowerResult.includes('analys') || lowerResult.includes('analysis')) {
+      exerciseType = 'analysis';
+    }
+
+    return {
+      title: title.substring(0, 200),
+      purpose: purpose.substring(0, 1000),
+      scenario: scenario.substring(0, 2000),
+      task: task.substring(0, 1000),
+      objectives: objectives.substring(0, 500),
+      rolesToPlay: rolesToPlay?.substring(0, 500),
+      evaluationCriteria: evaluationCriteria?.substring(0, 1000),
+      followUpQuestions: followUpQuestions?.substring(0, 1000),
+      exerciseType,
+      difficulty: 'intermediate',
+      timeMinutes: 5,
+      approved: false,
+    };
+  }
+
+  /**
+   * Batch generate exercises for all sessions with articles
+   */
+  async executeBatchExerciseCreation(context: WorkflowContext): Promise<any> {
+    const { projectId, onProgress } = context;
+
+    // Get all sessions with articles but without exercises
+    const sessions = await prisma.session.findMany({
+      where: {
+        chapter: { projectId },
+        article: { isNot: null },
+        aiExercise: null,
+      },
+      include: {
+        article: true,
+        chapter: true,
+      },
+      orderBy: [{ chapter: { number: 'asc' } }, { number: 'asc' }],
+    });
+
+    if (sessions.length === 0) {
+      onProgress?.('✅ All AI exercises already exist.');
+      return { message: 'All exercises already exist', count: 0 };
+    }
+
+    onProgress?.(`🎮 Starting batch generation for ${sessions.length} AI exercises...`);
+
+    const results = [];
+
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i];
+
+      try {
+        onProgress?.(
+          `🎮 [${i + 1}/${sessions.length}] Creating exercise for Session ${session.number}: ${session.name}...`
+        );
+
+        const result = await this.executeExerciseCreation(context, session.id);
+        results.push({ sessionId: session.id, ...result });
+        onProgress?.(`✅ [${i + 1}/${sessions.length}] Exercise created successfully!`);
+
+        if (i < sessions.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      } catch (error: any) {
+        console.error(`Error creating exercise for session ${session.id}:`, error);
+        onProgress?.(
+          `❌ Failed to create exercise for Session ${session.number}: ${error.message}`
+        );
+        results.push({ sessionId: session.id, error: error.message });
+      }
+    }
+
+    onProgress?.(
+      `✅ Batch exercise generation complete! Created ${results.filter((r) => !r.error).length} exercises.`
     );
 
     return {

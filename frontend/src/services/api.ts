@@ -358,6 +358,18 @@ export const workflowApi = {
 
   approveQuiz: (quizId: string) => api.post(`/workflow/quizzes/${quizId}/approve`),
 
+  // AI Exercises
+  createExercise: (sessionId: string, onProgress: (message: string) => void) =>
+    createSSEPromise(`/api/workflow/sessions/${sessionId}/exercise`, onProgress),
+
+  batchCreateExercises: (projectId: string, onProgress: (message: string) => void) =>
+    createSSEPromise(`/api/workflow/projects/${projectId}/exercises/batch`, onProgress),
+
+  approveExercise: (exerciseId: string) => api.post(`/workflow/exercises/${exerciseId}/approve`),
+
+  saveExerciseFeedback: (exerciseId: string, feedback: string) =>
+    api.post(`/workflow/exercises/${exerciseId}/feedback`, { feedback }),
+
   createTestSession: (sessionId: string, onProgress: (message: string) => void) =>
     createSSEPromise(`/api/workflow/sessions/${sessionId}/test-session`, onProgress),
 

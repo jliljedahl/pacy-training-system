@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider  = "sqlite"
+  url       = "file:./dev.db"
 }
 
 // User model - synced with Supabase Auth
@@ -138,6 +137,7 @@ model Session {
   article     Article?
   videoScript VideoScript?
   quiz        Quiz?
+  aiExercise  AIExercise?
 
   @@index([chapterId])
   @@unique([chapterId, number])
@@ -216,6 +216,36 @@ model QuizQuestion {
 
   @@index([quizId])
   @@map("quiz_questions")
+}
+
+model AIExercise {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessionId   String   @unique
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  title       String
+  purpose     String   // What skill/behavior this trains
+  scenario    String   // The situation description
+  task        String   // What the learner must do
+  objectives  String   // JSON array of learning objectives trained
+
+  // AI Mentor guidance
+  rolesToPlay String?  // Who the AI should roleplay
+  evaluationCriteria String?  // What makes a good response
+  followUpQuestions String?  // Questions to deepen reflection
+
+  exerciseType String  // decision, response, roleplay, planning, analysis
+  difficulty  String   @default("intermediate") // basic, intermediate, advanced
+  timeMinutes Int      @default(5)
+
+  feedback    String?  // User feedback/comments
+  approved    Boolean  @default(false)
+  approvedAt  DateTime?
+
+  @@map("ai_exercises")
 }
 
 model WorkflowStep {

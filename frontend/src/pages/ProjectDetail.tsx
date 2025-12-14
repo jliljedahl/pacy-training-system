@@ -343,6 +343,97 @@ export default function ProjectDetail() {
     }
   };
 
+  const createExercise = async (sessionId: string) => {
+    setExecuting(true);
+    setProgress([]);
+
+    try {
+      await workflowApi.createExercise(sessionId, (message) => {
+        setProgress((prev) => [...prev, message]);
+      });
+
+      await loadProject();
+      setActiveTab('content');
+    } catch (error: any) {
+      console.error('Exercise creation failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const approveExercise = async (exerciseId: string) => {
+    try {
+      await workflowApi.approveExercise(exerciseId);
+      await loadProject();
+
+      // After approving first exercise, offer to batch generate rest
+      const allSessions = project?.chapters?.flatMap((c: any) => c.sessions) || [];
+      const sessionsWithArticlesButNoExercise = allSessions.filter(
+        (s: any) => s.article && !s.aiExercise
+      );
+
+      if (sessionsWithArticlesButNoExercise.length > 0) {
+        const shouldBatch = confirm(
+          `Du har godkänt första AI-övningen. Vill du generera alla ${sessionsWithArticlesButNoExercise.length} återstående AI-övningar automatiskt?`
+        );
+
+        if (shouldBatch) {
+          await batchCreateAllExercises();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to approve exercise:', error);
+      alert('Failed to approve exercise');
+    }
+  };
+
+  const batchCreateAllExercises = async () => {
+    if (!id) return;
+
+    setExecuting(true);
+    setProgress([]);
+    setProgress((prev) => [...prev, '🧠 Starting batch generation for ALL AI exercises...']);
+
+    try {
+      const result = await workflowApi.batchCreateExercises(id, (message) => {
+        setProgress((prev) => [...prev, message]);
+      });
+
+      setProgress((prev) => [
+        ...prev,
+        `✅ Batch exercise generation complete! Created ${result.created || 0} exercises.`,
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await loadProject();
+
+      setTimeout(async () => {
+        await loadProject();
+      }, 2000);
+
+      setActiveTab('content');
+    } catch (error: any) {
+      console.error('Batch exercise creation failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+      alert(`Batch exercise generation failed: ${error.message}`);
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const saveExerciseFeedback = async (exerciseId: string, feedbackText: string) => {
+    try {
+      await workflowApi.saveExerciseFeedback(exerciseId, feedbackText);
+      setFeedback((prev) => ({ ...prev, [`exercise-${exerciseId}`]: feedbackText }));
+      await loadProject();
+      alert('Feedback sparad!');
+    } catch (error: any) {
+      console.error('Failed to save exercise feedback:', error);
+      alert(`Kunde inte spara feedback: ${error.message}`);
+    }
+  };
+
   const batchCreateAllQuizzes = async () => {
     if (!id) return;
 
@@ -1419,6 +1510,140 @@ export default function ProjectDetail() {
                                     </button>
                                   </div>
                                 </div>
+                              )}
+
+                              {/* AI Exercise Section */}
+                              {session.aiExercise ? (
+                                <div className="mt-6 border-l-4 border-orange-500 pl-4 py-2">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h5 className="font-semibold text-lg flex items-center gap-2">
+                                      <FileText className="w-5 h-5 text-orange-600" />
+                                      AI-Övning
+                                    </h5>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-gray-600">
+                                        {session.aiExercise.exerciseType} •{' '}
+                                        {session.aiExercise.timeMinutes} min
+                                        {session.aiExercise.approved && (
+                                          <span className="ml-2 text-green-600">✓ Approved</span>
+                                        )}
+                                      </span>
+                                      {!session.aiExercise.approved && (
+                                        <button
+                                          onClick={() => approveExercise(session.aiExercise.id)}
+                                          className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                                        >
+                                          Approve Exercise
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-4 bg-orange-50 p-4 rounded-lg">
+                                    <div>
+                                      <h6 className="font-semibold text-orange-800">
+                                        {session.aiExercise.title}
+                                      </h6>
+                                      <p className="text-sm text-orange-700 mt-1">
+                                        {session.aiExercise.purpose}
+                                      </p>
+                                    </div>
+
+                                    <div>
+                                      <h6 className="font-medium text-gray-700 mb-1">Scenario:</h6>
+                                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                        {session.aiExercise.scenario}
+                                      </p>
+                                    </div>
+
+                                    <div>
+                                      <h6 className="font-medium text-gray-700 mb-1">
+                                        Din uppgift:
+                                      </h6>
+                                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                        {session.aiExercise.task}
+                                      </p>
+                                    </div>
+
+                                    {session.aiExercise.rolesToPlay && (
+                                      <div className="mt-4 p-3 bg-white rounded border border-orange-200">
+                                        <h6 className="font-medium text-gray-700 mb-2">
+                                          För AI-mentorn:
+                                        </h6>
+                                        <p className="text-sm text-gray-600">
+                                          <strong>Roller att spela:</strong>{' '}
+                                          {session.aiExercise.rolesToPlay}
+                                        </p>
+                                        {session.aiExercise.evaluationCriteria && (
+                                          <p className="text-sm text-gray-600 mt-1">
+                                            <strong>Utvärderingskriterier:</strong>{' '}
+                                            {session.aiExercise.evaluationCriteria}
+                                          </p>
+                                        )}
+                                        {session.aiExercise.followUpQuestions && (
+                                          <p className="text-sm text-gray-600 mt-1">
+                                            <strong>Uppföljningsfrågor:</strong>{' '}
+                                            {session.aiExercise.followUpQuestions}
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Exercise Feedback */}
+                                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <MessageSquare className="w-4 h-4 text-gray-600" />
+                                      <h6 className="font-semibold text-sm text-gray-700">
+                                        Feedback/Kommentarer
+                                      </h6>
+                                    </div>
+                                    <textarea
+                                      value={
+                                        feedback[`exercise-${session.aiExercise.id}`] ||
+                                        session.aiExercise.feedback ||
+                                        ''
+                                      }
+                                      onChange={(e) =>
+                                        setFeedback((prev) => ({
+                                          ...prev,
+                                          [`exercise-${session.aiExercise.id}`]: e.target.value,
+                                        }))
+                                      }
+                                      placeholder="Lägg till feedback för AI-övningen..."
+                                      className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg text-sm"
+                                    />
+                                    <button
+                                      onClick={() =>
+                                        saveExerciseFeedback(
+                                          session.aiExercise.id,
+                                          feedback[`exercise-${session.aiExercise.id}`] || ''
+                                        )
+                                      }
+                                      className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                                    >
+                                      Save Feedback
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                session.article &&
+                                session.quiz?.approved && (
+                                  <div className="mt-6 border-l-4 border-orange-300 pl-4 py-2">
+                                    <div className="flex items-center gap-4">
+                                      <span className="text-sm text-gray-500">
+                                        🧠 AI-övning ej skapad
+                                      </span>
+                                      <button
+                                        onClick={() => createExercise(session.id)}
+                                        disabled={executing}
+                                        className="px-3 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-400 text-sm font-medium"
+                                      >
+                                        Skapa AI-övning
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
                               )}
                             </div>
                           ))}
