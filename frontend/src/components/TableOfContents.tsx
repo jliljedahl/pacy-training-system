@@ -235,7 +235,7 @@ export default function TableOfContents({
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="prose prose-sm max-w-none text-[#1d1d1f]">
+                                    <div className="prose prose-slate prose-sm max-w-none break-words overflow-hidden text-[#1d1d1f]">
                                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                         {session.article.content}
                                       </ReactMarkdown>
@@ -305,7 +305,7 @@ export default function TableOfContents({
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="prose prose-sm max-w-none text-[#1d1d1f]">
+                                    <div className="prose prose-slate prose-sm max-w-none break-words overflow-hidden text-[#1d1d1f]">
                                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                         {session.videoScript.content}
                                       </ReactMarkdown>

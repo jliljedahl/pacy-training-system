@@ -1255,7 +1255,7 @@ export default function ProjectDetail() {
                                       Edit
                                     </button>
                                   </div>
-                                  <div className="prose max-w-none">
+                                  <div className="prose prose-slate max-w-none break-words overflow-hidden">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                       {session.article.content}
                                     </ReactMarkdown>
