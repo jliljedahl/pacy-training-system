@@ -215,7 +215,7 @@ Keep the entire response focused and under 2000 words. Be specific and actionabl
     isFirstArticle: boolean = false,
     isFirstInChapterOverride?: boolean
   ): Promise<any> {
-    const { projectId, onProgress } = context;
+    const { projectId, onProgress, feedback, previousMatrix } = context;
 
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
@@ -357,6 +357,20 @@ IMPORTANT: Build on these previous sessions naturally. Reference what was learne
     : ''
 }
 
+${
+  feedback
+    ? `
+🔄 REGENERATION REQUEST:
+User feedback: ${feedback}
+
+Previous article content that needs revision:
+${previousMatrix}
+
+IMPORTANT: Address the user's feedback and revise the article accordingly. Keep what works well, but make the specific changes requested in the feedback. This is a regeneration - improve based on the feedback provided.
+`
+    : ''
+}
+
 Create the complete article now.
 `;
 
@@ -485,6 +499,54 @@ Only report issues you cannot fix automatically.
           },
         });
 
+    // Generate change summary if this was a regeneration
+    let changeSummary = null;
+    if (feedback && previousMatrix) {
+      onProgress?.('📝 Generating change summary...');
+
+      const changeSummaryStep = await this.createWorkflowStep(
+        projectId,
+        'article_creation',
+        `change_summary_${sessionId}`,
+        'article-writer'
+      );
+
+      const summaryPrompt = `
+Compare these two versions of the article and provide a concise summary of what changed.
+
+USER FEEDBACK:
+${feedback}
+
+PREVIOUS VERSION:
+${previousMatrix.substring(0, 3000)}...
+
+NEW VERSION:
+${correctedArticle.substring(0, 3000)}...
+
+Provide a bullet-point summary (3-5 points) of the key changes made. Focus on:
+- What was removed or changed
+- What was added or improved
+- How the feedback was addressed
+
+Keep it concise and actionable. Format as markdown bullet points.
+`;
+
+      changeSummary = await agentOrchestrator.invokeAgent(
+        'article-writer',
+        summaryPrompt,
+        { feedback, previousContent: previousMatrix, newContent: correctedArticle },
+        onProgress
+      );
+
+      await this.completeWorkflowStep(changeSummaryStep.id, changeSummary);
+
+      // Update article with change summary
+      await prisma.article.update({
+        where: { id: article.id },
+        data: { changeSummary },
+      });
+    }
+
     onProgress?.(
       `✅ Article complete! ${isFirstArticle ? 'Please approve the style before continuing.' : 'Ready for approval.'}`
     );
@@ -496,6 +558,7 @@ Only report issues you cannot fix automatically.
       article: articleResult,
       histReview,
       factCheck,
+      changeSummary,
       isFirstArticle,
     };
   }
@@ -858,7 +921,7 @@ Only report issues you cannot fix automatically.
    * OPTIMIZED Phase 3: Video Creation (only if requested)
    */
   async executeVideoCreation(context: WorkflowContext, sessionId: string): Promise<any> {
-    const { projectId, onProgress } = context;
+    const { projectId, onProgress, feedback, previousMatrix } = context;
 
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
@@ -956,6 +1019,20 @@ IMPORTANT: Build on these previous sessions naturally. Reference what was learne
     : ''
 }
 
+${
+  feedback
+    ? `
+🔄 REGENERATION REQUEST:
+User feedback: ${feedback}
+
+Previous video script that needs revision:
+${previousMatrix}
+
+IMPORTANT: Address the user's feedback and revise the video script accordingly. Keep what works well, but make the specific changes requested in the feedback. This is a regeneration - improve based on the feedback provided.
+`
+    : ''
+}
+
 CRITICAL REQUIREMENTS:
 - Exactly 240-260 words
 - Conversational, spoken-word style
@@ -999,9 +1076,57 @@ CRITICAL REQUIREMENTS:
           },
         });
 
+    // Generate change summary if this was a regeneration
+    let changeSummary = null;
+    if (feedback && previousMatrix) {
+      onProgress?.('📝 Generating change summary...');
+
+      const changeSummaryStep = await this.createWorkflowStep(
+        projectId,
+        'video_creation',
+        `change_summary_${sessionId}`,
+        'video-narrator'
+      );
+
+      const summaryPrompt = `
+Compare these two versions of the video script and provide a concise summary of what changed.
+
+USER FEEDBACK:
+${feedback}
+
+PREVIOUS VERSION:
+${previousMatrix}
+
+NEW VERSION:
+${videoResult}
+
+Provide a bullet-point summary (3-5 points) of the key changes made. Focus on:
+- What was removed or changed
+- What was added or improved
+- How the feedback was addressed
+
+Keep it concise and actionable. Format as markdown bullet points.
+`;
+
+      changeSummary = await agentOrchestrator.invokeAgent(
+        'video-narrator',
+        summaryPrompt,
+        { feedback, previousContent: previousMatrix, newContent: videoResult },
+        onProgress
+      );
+
+      await this.completeWorkflowStep(changeSummaryStep.id, changeSummary);
+
+      // Update video script with change summary
+      await prisma.videoScript.update({
+        where: { id: videoScript.id },
+        data: { changeSummary },
+      });
+    }
+
     onProgress?.(`✅ Video script complete!`);
 
-    return { videoScript: videoResult, videoScriptId: videoScript.id };
+    return { videoScript: videoResult, videoScriptId: videoScript.id, changeSummary };
   }
 
   /**
@@ -1490,6 +1615,119 @@ Focus on: What decision, response, or action would demonstrate that the learner 
 
     return {
       total: sessions.length,
+      created: results.filter((r) => !r.error).length,
+      failed: results.filter((r) => r.error).length,
+      results,
+    };
+  }
+
+  /**
+   * Unified batch generation: Videos, Quizzes, and AI Exercises together
+   * This creates all three content types for sessions with approved articles
+   */
+  async executeBatchContentCreation(
+    context: WorkflowContext,
+    numQuestions: number = 3
+  ): Promise<any> {
+    const { projectId, onProgress } = context;
+
+    // Get all sessions with articles but missing video/quiz/exercise
+    const sessions = await prisma.session.findMany({
+      where: {
+        chapter: { projectId },
+        article: { isNot: null },
+      },
+      include: {
+        article: true,
+        videoScript: true,
+        quiz: true,
+        aiExercise: true,
+        chapter: true,
+      },
+      orderBy: [{ chapter: { number: 'asc' } }, { number: 'asc' }],
+    });
+
+    const sessionsNeedingContent = sessions.filter(
+      (s) => !s.videoScript || !s.quiz || !s.aiExercise
+    );
+
+    if (sessionsNeedingContent.length === 0) {
+      onProgress?.('✅ All content already exists for all sessions.');
+      return { message: 'All content already exists', count: 0 };
+    }
+
+    onProgress?.(
+      `🚀 Starting batch generation for ${sessionsNeedingContent.length} sessions (Videos, Quizzes, AI Exercises)...`
+    );
+
+    const results = [];
+
+    for (let i = 0; i < sessionsNeedingContent.length; i++) {
+      const session = sessionsNeedingContent[i];
+
+      try {
+        const sessionResult: any = {
+          sessionId: session.id,
+          sessionNumber: session.number,
+          sessionName: session.name,
+        };
+
+        // 1. Create video if missing
+        if (!session.videoScript) {
+          onProgress?.(
+            `🎬 [${i + 1}/${sessionsNeedingContent.length}] Creating video for Session ${session.number}...`
+          );
+          const videoResult = await this.executeVideoCreation(context, session.id);
+          sessionResult.video = videoResult;
+          onProgress?.(`✅ Video created for Session ${session.number}`);
+        }
+
+        // 2. Create quiz if missing
+        if (!session.quiz) {
+          onProgress?.(
+            `🎯 [${i + 1}/${sessionsNeedingContent.length}] Creating quiz for Session ${session.number}...`
+          );
+          const quizResult = await this.executeQuizCreation(context, session.id, numQuestions);
+          sessionResult.quiz = quizResult;
+          onProgress?.(`✅ Quiz created for Session ${session.number}`);
+        }
+
+        // 3. Create AI exercise if missing
+        if (!session.aiExercise) {
+          onProgress?.(
+            `🎮 [${i + 1}/${sessionsNeedingContent.length}] Creating AI exercise for Session ${session.number}...`
+          );
+          const exerciseResult = await this.executeExerciseCreation(context, session.id);
+          sessionResult.exercise = exerciseResult;
+          onProgress?.(`✅ AI exercise created for Session ${session.number}`);
+        }
+
+        results.push(sessionResult);
+        onProgress?.(
+          `✅ [${i + 1}/${sessionsNeedingContent.length}] All content created for Session ${session.number}!`
+        );
+
+        // Small delay between sessions
+        if (i < sessionsNeedingContent.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      } catch (error: any) {
+        console.error(`Error creating content for session ${session.id}:`, error);
+        onProgress?.(`❌ Failed to create content for Session ${session.number}: ${error.message}`);
+        results.push({
+          sessionId: session.id,
+          sessionNumber: session.number,
+          error: error.message,
+        });
+      }
+    }
+
+    onProgress?.(
+      `✅ Batch content generation complete! Processed ${results.filter((r) => !r.error).length} sessions.`
+    );
+
+    return {
+      total: sessionsNeedingContent.length,
       created: results.filter((r) => !r.error).length,
       failed: results.filter((r) => r.error).length,
       results,

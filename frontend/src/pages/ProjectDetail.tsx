@@ -6,6 +6,8 @@ import remarkGfm from 'remark-gfm';
 import { projectsApi, workflowApi, contentApi } from '../services/api';
 import TableOfContents from '../components/TableOfContents';
 import MatrixDebrief from '../components/MatrixDebrief';
+import ArticleReview from '../components/ArticleReview';
+import VideoReview from '../components/VideoReview';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +24,8 @@ export default function ProjectDetail() {
   const [, setLastCompletedChapter] = useState<string | null>(null);
   const [editingQuiz, setEditingQuiz] = useState<string | null>(null);
   const [editedQuizQuestions, setEditedQuizQuestions] = useState<any[]>([]);
+  const [regeneratingArticle, setRegeneratingArticle] = useState<string | null>(null);
+  const [regeneratingVideo, setRegeneratingVideo] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -245,19 +249,19 @@ export default function ProjectDetail() {
       await workflowApi.approveVideo(videoId);
       await loadProject();
 
-      // After approving first video, offer to batch generate rest
+      // After approving first video, offer to batch generate all content (videos, quizzes, exercises)
       const allSessions = project?.chapters?.flatMap((c: any) => c.sessions) || [];
-      const sessionsWithArticlesButNoVideo = allSessions.filter(
-        (s: any) => s.article && !s.videoScript
+      const sessionsNeedingContent = allSessions.filter(
+        (s: any) => s.article && (!s.videoScript || !s.quiz || !s.aiExercise)
       );
 
-      if (sessionsWithArticlesButNoVideo.length > 0) {
+      if (sessionsNeedingContent.length > 0) {
         const shouldBatch = confirm(
-          `Du har godkänt första video-narrativet. Vill du generera alla ${sessionsWithArticlesButNoVideo.length} återstående video-narrativ automatiskt?`
+          `Du har godkänt första video-narrativet. Vill du generera allt innehåll (video-narrativ, quiz och AI-övningar) för alla ${sessionsNeedingContent.length} återstående sessioner automatiskt?`
         );
 
         if (shouldBatch) {
-          await batchCreateAllVideos();
+          await batchCreateAllContent();
         }
       }
     } catch (error) {
@@ -295,6 +299,164 @@ export default function ProjectDetail() {
       console.error('Batch video creation failed:', error);
       setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
       alert(`Batch video generation failed: ${error.message}`);
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const batchCreateAllContent = async () => {
+    if (!id) return;
+
+    setExecuting(true);
+    setProgress([]);
+    setProgress((prev) => [
+      ...prev,
+      '🚀 Starting unified batch generation (Videos, Quizzes, AI Exercises)...',
+    ]);
+
+    try {
+      const result = await workflowApi.batchCreateAllContent(
+        id,
+        project?.quizQuestions || 3,
+        (message) => {
+          setProgress((prev) => [...prev, message]);
+        }
+      );
+
+      setProgress((prev) => [
+        ...prev,
+        `✅ Batch content generation complete! Processed ${(result as any).created || 0} sessions.`,
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await loadProject();
+
+      setTimeout(async () => {
+        await loadProject();
+      }, 2000);
+
+      setActiveTab('content');
+    } catch (error: any) {
+      console.error('Batch content creation failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+      alert(`Batch content generation failed: ${error.message}`);
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const batchCreateAllCompleteContent = async () => {
+    if (!id) return;
+
+    setExecuting(true);
+    setProgress([]);
+    setProgress((prev) => [
+      ...prev,
+      '🚀 Generating complete content for ALL remaining sessions...',
+    ]);
+
+    try {
+      // Use the unified batch content creation endpoint
+      const result = await workflowApi.batchCreateAllContent(
+        id,
+        project?.quizQuestions || 3,
+        (message) => {
+          setProgress((prev) => [...prev, message]);
+        }
+      );
+
+      setProgress((prev) => [
+        ...prev,
+        `✅ Complete! Generated content for ${(result as any).created || 0} sessions.`,
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await loadProject();
+
+      setTimeout(async () => {
+        await loadProject();
+      }, 2000);
+
+      setActiveTab('content');
+    } catch (error: any) {
+      console.error('Batch complete content creation failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+      alert(`Batch generation failed: ${error.message}`);
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const batchCreateNextChapter = async () => {
+    if (!id || !project) return;
+
+    setExecuting(true);
+    setProgress([]);
+
+    try {
+      // Find the first chapter that has incomplete sessions
+      const chapters = project.chapters || [];
+      const nextChapter = chapters.find((chapter: any) =>
+        chapter.sessions.some((s: any) => s.article && (!s.videoScript || !s.quiz || !s.aiExercise))
+      );
+
+      if (!nextChapter) {
+        alert('No chapter with incomplete sessions found');
+        setExecuting(false);
+        return;
+      }
+
+      setProgress((prev) => [
+        ...prev,
+        `📖 Generating complete content for Chapter ${nextChapter.number}: ${nextChapter.name}...`,
+      ]);
+
+      // Use chapter-specific batch generation
+      const result = await workflowApi.batchCreateChapterComplete(
+        nextChapter.id,
+        project?.quizQuestions || 3,
+        (message) => {
+          setProgress((prev) => [...prev, message]);
+        }
+      );
+
+      setProgress((prev) => [
+        ...prev,
+        `✅ Chapter ${nextChapter.number} complete! Generated content for ${(result as any).created || 0} sessions.`,
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await loadProject();
+
+      // After chapter is complete, offer options again
+      const remainingSessions =
+        project.chapters
+          ?.flatMap((c: any) => c.sessions)
+          ?.filter((s: any) => !s.article || !s.videoScript || !s.quiz || !s.aiExercise) || [];
+
+      if (remainingSessions.length > 0) {
+        const choice = window.prompt(
+          `✅ Kapitel ${nextChapter.number} färdigt!\n\n` +
+            `${remainingSessions.length} sessioner kvar.\n\n` +
+            `Fortsätt?\n` +
+            `1 = Generera ALLT återstående innehåll\n` +
+            `2 = Generera nästa kapitel\n` +
+            `0 = Avbryt\n\n` +
+            `Skriv 1, 2 eller 0:`
+        );
+
+        if (choice === '1') {
+          await batchCreateAllCompleteContent();
+        } else if (choice === '2') {
+          await batchCreateNextChapter();
+        }
+      }
+
+      setActiveTab('content');
+    } catch (error: any) {
+      console.error('Chapter batch creation failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+      alert(`Chapter generation failed: ${error.message}`);
     } finally {
       setExecuting(false);
     }
@@ -367,19 +529,33 @@ export default function ProjectDetail() {
       await workflowApi.approveExercise(exerciseId);
       await loadProject();
 
-      // After approving first exercise, offer to batch generate rest
+      // Check if this is the first complete session (first exercise approval)
+      const exercise = project?.chapters
+        ?.flatMap((c: any) => c.sessions)
+        ?.flatMap((s: any) => s.aiExercise)
+        ?.find((e: any) => e?.id === exerciseId);
+
       const allSessions = project?.chapters?.flatMap((c: any) => c.sessions) || [];
-      const sessionsWithArticlesButNoExercise = allSessions.filter(
-        (s: any) => s.article && !s.aiExercise
+      const sessionsWithoutCompleteContent = allSessions.filter(
+        (s: any) => !s.article || !s.videoScript || !s.quiz || !s.aiExercise
       );
 
-      if (sessionsWithArticlesButNoExercise.length > 0) {
-        const shouldBatch = confirm(
-          `Du har godkänt första AI-övningen. Vill du generera alla ${sessionsWithArticlesButNoExercise.length} återstående AI-övningar automatiskt?`
+      if (sessionsWithoutCompleteContent.length > 0 && exercise) {
+        // Offer two options: batch all OR batch next chapter
+        const choice = window.prompt(
+          `🎉 Första sessionen är komplett!\n\n` +
+            `${sessionsWithoutCompleteContent.length} sessioner saknar innehåll.\n\n` +
+            `Välj hur du vill fortsätta:\n` +
+            `1 = Generera ALLT innehåll för alla återstående sessioner\n` +
+            `2 = Generera nästa kapitel endast\n` +
+            `0 = Avbryt\n\n` +
+            `Skriv 1, 2 eller 0:`
         );
 
-        if (shouldBatch) {
-          await batchCreateAllExercises();
+        if (choice === '1') {
+          await batchCreateAllCompleteContent();
+        } else if (choice === '2') {
+          await batchCreateNextChapter();
         }
       }
     } catch (error) {
@@ -550,6 +726,48 @@ export default function ProjectDetail() {
     } catch (error: any) {
       console.error('Failed to save quiz questions:', error);
       alert(`Kunde inte spara quiz-frågor: ${error.message}`);
+    }
+  };
+
+  const regenerateArticle = async (articleId: string, feedback: string) => {
+    setRegeneratingArticle(articleId);
+    setProgress([]);
+    setProgress((prev) => [...prev, '🔄 Regenererar artikel baserat på feedback...']);
+
+    try {
+      await workflowApi.regenerateArticle(articleId, feedback, (message) => {
+        setProgress((prev) => [...prev, message]);
+      });
+
+      setProgress((prev) => [...prev, '✅ Artikel regenererad!']);
+      await loadProject();
+    } catch (error: any) {
+      console.error('Article regeneration failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+      alert(`Kunde inte regenerera artikel: ${error.message}`);
+    } finally {
+      setRegeneratingArticle(null);
+    }
+  };
+
+  const regenerateVideo = async (videoId: string, feedback: string) => {
+    setRegeneratingVideo(videoId);
+    setProgress([]);
+    setProgress((prev) => [...prev, '🔄 Regenererar videomanus baserat på feedback...']);
+
+    try {
+      await workflowApi.regenerateVideo(videoId, feedback, (message) => {
+        setProgress((prev) => [...prev, message]);
+      });
+
+      setProgress((prev) => [...prev, '✅ Videomanus regenererat!']);
+      await loadProject();
+    } catch (error: any) {
+      console.error('Video regeneration failed:', error);
+      setProgress((prev) => [...prev, `❌ Error: ${error.message}`]);
+      alert(`Kunde inte regenerera videomanus: ${error.message}`);
+    } finally {
+      setRegeneratingVideo(null);
     }
   };
 
@@ -1151,284 +1369,72 @@ export default function ProjectDetail() {
                             <div
                               key={session.article.id}
                               id={`article-${session.article.id}`}
-                              className="border-l-4 border-blue-500 pl-4 py-2"
+                              className="mb-6"
                             >
-                              <h5 className="font-semibold text-lg mb-2">
-                                Session {session.number}: {session.name}
-                              </h5>
-                              <div className="flex items-center gap-4 mb-3 flex-wrap">
-                                <p className="text-sm text-gray-600">
-                                  {session.article.wordCount} words • Status:{' '}
-                                  {session.article.status}
-                                </p>
-                                {!session.article.approved && (
-                                  <button
-                                    onClick={() => approveArticle(session.article.id)}
-                                    className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                                  >
-                                    Approve Article
-                                  </button>
-                                )}
-                                {session.article.approved && (
-                                  <>
-                                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
-                                      ✓ Approved
-                                    </span>
-                                    {!session.videoScript && (
-                                      <button
-                                        onClick={() => createVideo(session.id)}
-                                        disabled={executing}
-                                        className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 text-sm font-medium"
-                                      >
-                                        Create Video Script
-                                      </button>
-                                    )}
-                                    {session.videoScript && !session.videoScript.approved && (
-                                      <button
-                                        onClick={() => approveVideo(session.videoScript.id)}
-                                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                                      >
-                                        Approve Video
-                                      </button>
-                                    )}
-                                    {session.videoScript?.approved && !session.quiz && (
-                                      <button
-                                        onClick={() => createQuiz(session.id)}
-                                        disabled={executing}
-                                        className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm font-medium"
-                                      >
-                                        Create Quiz
-                                      </button>
-                                    )}
-                                    {session.quiz && !session.quiz.approved && (
-                                      <button
-                                        onClick={() => approveQuiz(session.quiz.id)}
-                                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                                      >
-                                        Approve Quiz
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                              {/* Edit mode or view mode */}
-                              {editingContent?.type === 'article' &&
-                              editingContent.id === session.article.id ? (
-                                <div className="space-y-3">
-                                  <textarea
-                                    value={editedContent}
-                                    onChange={(e) => setEditedContent(e.target.value)}
-                                    className="w-full min-h-[400px] p-4 border border-gray-300 rounded-lg font-mono text-sm"
-                                    placeholder="Edit article content..."
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => saveContent('article', session.article.id)}
-                                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                                    >
-                                      <Save className="w-4 h-4" />
-                                      Save Changes
-                                    </button>
-                                    <button
-                                      onClick={cancelEditing}
-                                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 flex items-center gap-2"
-                                    >
-                                      <X className="w-4 h-4" />
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="flex justify-end gap-2 mb-2">
-                                    <button
-                                      onClick={() =>
-                                        startEditing(
-                                          'article',
-                                          session.article.id,
-                                          session.article.content
-                                        )
-                                      }
-                                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 flex items-center gap-1"
-                                    >
-                                      <Edit2 className="w-4 h-4" />
-                                      Edit
-                                    </button>
-                                  </div>
-                                  <div className="prose prose-slate max-w-none break-words overflow-hidden">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                      {session.article.content
-                                        .replace(/^```markdown\n/, '')
-                                        .replace(/^```\n/, '')
-                                        .replace(/\n```$/, '')}
-                                    </ReactMarkdown>
-                                  </div>
-                                </>
-                              )}
+                              <ArticleReview
+                                article={session.article}
+                                session={session}
+                                chapter={chapter}
+                                onApprove={() => approveArticle(session.article.id)}
+                                onRegenerate={(feedback) =>
+                                  regenerateArticle(session.article.id, feedback)
+                                }
+                                isRegenerating={regeneratingArticle === session.article.id}
+                              />
 
-                              {/* Feedback section */}
-                              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <MessageSquare className="w-4 h-4 text-gray-600" />
-                                  <h6 className="font-semibold text-sm text-gray-700">
-                                    Feedback/Kommentarer
-                                  </h6>
-                                </div>
-                                <textarea
-                                  value={
-                                    feedback[`article-${session.article.id}`] ||
-                                    session.article.feedback ||
-                                    ''
-                                  }
-                                  onChange={(e) =>
-                                    setFeedback((prev) => ({
-                                      ...prev,
-                                      [`article-${session.article.id}`]: e.target.value,
-                                    }))
-                                  }
-                                  placeholder="Lägg till feedback för att justera innehållet. Denna feedback kommer att användas när du genererar resten av kapitlet."
-                                  className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg text-sm"
-                                />
-                                <button
-                                  onClick={() =>
-                                    saveFeedbackForContent(
-                                      'article',
-                                      session.article.id,
-                                      feedback[`article-${session.article.id}`] || ''
-                                    )
-                                  }
-                                  className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                                >
-                                  Save Feedback
-                                </button>
-                              </div>
-
-                              {session.article.factCheck && (
-                                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                                  <p className="text-sm font-semibold text-yellow-800">
-                                    Fact Check Notes:
-                                  </p>
-                                  <p className="text-sm text-yellow-700">
-                                    {session.article.factCheck}
-                                  </p>
+                              {/* Action buttons for approved articles */}
+                              {session.article.approved && (
+                                <div className="mt-4 flex gap-2">
+                                  {!session.videoScript && (
+                                    <button
+                                      onClick={() => createVideo(session.id)}
+                                      disabled={executing}
+                                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 text-sm font-medium"
+                                    >
+                                      Create Video Script
+                                    </button>
+                                  )}
+                                  {session.videoScript && !session.videoScript.approved && (
+                                    <button
+                                      onClick={() => approveVideo(session.videoScript.id)}
+                                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                                    >
+                                      Approve Video
+                                    </button>
+                                  )}
+                                  {session.videoScript?.approved && !session.quiz && (
+                                    <button
+                                      onClick={() => createQuiz(session.id)}
+                                      disabled={executing}
+                                      className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm font-medium"
+                                    >
+                                      Create Quiz
+                                    </button>
+                                  )}
+                                  {session.quiz && !session.quiz.approved && (
+                                    <button
+                                      onClick={() => approveQuiz(session.quiz.id)}
+                                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                                    >
+                                      Approve Quiz
+                                    </button>
+                                  )}
                                 </div>
                               )}
 
                               {/* Video Script Section */}
                               {session.videoScript && (
-                                <div className="mt-6 border-l-4 border-blue-500 pl-4 py-2">
-                                  <div className="flex items-center justify-between mb-3">
-                                    <h5 className="font-semibold text-lg flex items-center gap-2">
-                                      <FileText className="w-5 h-5 text-blue-600" />
-                                      Video Script
-                                    </h5>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm text-gray-600">
-                                        {session.videoScript.wordCount} words
-                                        {session.videoScript.approved && (
-                                          <span className="ml-2 text-green-600">✓ Approved</span>
-                                        )}
-                                      </span>
-                                      {!session.videoScript.approved && (
-                                        <button
-                                          onClick={() => approveVideo(session.videoScript.id)}
-                                          className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                                        >
-                                          Approve Video
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {editingContent?.type === 'video' &&
-                                  editingContent.id === session.videoScript.id ? (
-                                    <div className="space-y-3">
-                                      <textarea
-                                        value={editedContent}
-                                        onChange={(e) => setEditedContent(e.target.value)}
-                                        className="w-full min-h-[300px] p-4 border border-gray-300 rounded-lg font-mono text-sm"
-                                        placeholder="Edit video script content..."
-                                      />
-                                      <div className="flex gap-2">
-                                        <button
-                                          onClick={() =>
-                                            saveContent('video', session.videoScript.id)
-                                          }
-                                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                                        >
-                                          <Save className="w-4 h-4" />
-                                          Save Changes
-                                        </button>
-                                        <button
-                                          onClick={cancelEditing}
-                                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 flex items-center gap-2"
-                                        >
-                                          <X className="w-4 h-4" />
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <div className="flex justify-end gap-2 mb-2">
-                                        <button
-                                          onClick={() =>
-                                            startEditing(
-                                              'video',
-                                              session.videoScript.id,
-                                              session.videoScript.content
-                                            )
-                                          }
-                                          className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 flex items-center gap-1"
-                                        >
-                                          <Edit2 className="w-4 h-4" />
-                                          Edit
-                                        </button>
-                                      </div>
-                                      <div className="prose max-w-none">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                          {session.videoScript.content}
-                                        </ReactMarkdown>
-                                      </div>
-                                    </>
-                                  )}
-
-                                  {/* Video Feedback */}
-                                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <MessageSquare className="w-4 h-4 text-gray-600" />
-                                      <h6 className="font-semibold text-sm text-gray-700">
-                                        Feedback/Kommentarer
-                                      </h6>
-                                    </div>
-                                    <textarea
-                                      value={
-                                        feedback[`video-${session.videoScript.id}`] ||
-                                        session.videoScript.feedback ||
-                                        ''
-                                      }
-                                      onChange={(e) =>
-                                        setFeedback((prev) => ({
-                                          ...prev,
-                                          [`video-${session.videoScript.id}`]: e.target.value,
-                                        }))
-                                      }
-                                      placeholder="Lägg till feedback för video-narrativet..."
-                                      className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg text-sm"
-                                    />
-                                    <button
-                                      onClick={() =>
-                                        saveFeedbackForContent(
-                                          'video',
-                                          session.videoScript.id,
-                                          feedback[`video-${session.videoScript.id}`] || ''
-                                        )
-                                      }
-                                      className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                                    >
-                                      Save Feedback
-                                    </button>
-                                  </div>
+                                <div className="mt-6">
+                                  <VideoReview
+                                    video={session.videoScript}
+                                    session={session}
+                                    chapter={chapter}
+                                    onApprove={() => approveVideo(session.videoScript.id)}
+                                    onRegenerate={(feedback) =>
+                                      regenerateVideo(session.videoScript.id, feedback)
+                                    }
+                                    isRegenerating={regeneratingVideo === session.videoScript.id}
+                                  />
                                 </div>
                               )}
 

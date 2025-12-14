@@ -290,8 +290,23 @@ router.post('/projects/:projectId/matrix/regenerate', async (req, res, next) => 
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    let clientDisconnected = false;
+
+    // Handle client disconnect
+    req.on('close', () => {
+      clientDisconnected = true;
+      console.log(`[Matrix Regenerate] Client disconnected for project ${projectId}`);
+    });
+
     const sendProgress = (message: string) => {
-      res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+      if (!clientDisconnected && !res.writableEnded) {
+        try {
+          res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+        } catch (error) {
+          console.error('[Matrix Regenerate] Error sending progress:', error);
+          clientDisconnected = true;
+        }
+      }
     };
 
     try {
@@ -356,11 +371,16 @@ router.post('/projects/:projectId/matrix/regenerate', async (req, res, next) => 
         previousMatrix: previousMatrixContent, // Include previous matrix for context
       });
 
-      res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
-      res.end();
+      if (!clientDisconnected && !res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+        res.end();
+      }
     } catch (error: any) {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
-      res.end();
+      console.error('[Matrix Regenerate] Error during regeneration:', error);
+      if (!clientDisconnected && !res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+      }
     }
   } catch (error) {
     next(error);
@@ -424,13 +444,17 @@ router.post('/articles/:articleId/regenerate', async (req, res, next) => {
       });
 
       // Regenerate the article using the workflow engine
-      const result = await workflowEngineOptimized.createArticle({
-        projectId,
-        sessionId: article.sessionId,
-        onProgress: sendProgress,
-        feedback: feedback,
-        previousContent: previousContent,
-      });
+      const result = await workflowEngineOptimized.executeArticleCreation(
+        {
+          projectId,
+          phase: 'article_creation',
+          onProgress: sendProgress,
+          feedback: feedback, // Send user feedback
+          previousMatrix: previousContent, // Send previous content for context
+        },
+        article.sessionId,
+        false // isFirstArticle
+      );
 
       res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
       res.end();
@@ -500,13 +524,16 @@ router.post('/videos/:videoId/regenerate', async (req, res, next) => {
       });
 
       // Regenerate the video script using the workflow engine
-      const result = await workflowEngineOptimized.createVideoScript({
-        projectId,
-        sessionId: video.sessionId,
-        onProgress: sendProgress,
-        feedback: feedback,
-        previousContent: previousContent,
-      });
+      const result = await workflowEngineOptimized.executeVideoCreation(
+        {
+          projectId,
+          phase: 'video_creation',
+          onProgress: sendProgress,
+          feedback: feedback, // Send user feedback
+          previousMatrix: previousContent, // Send previous content for context
+        },
+        video.sessionId
+      );
 
       res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
       res.end();
@@ -1046,6 +1073,7 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
             article: true,
             videoScript: true,
             quiz: true,
+            aiExercise: true,
           },
           orderBy: { number: 'asc' },
         },
@@ -1159,6 +1187,24 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
             }
           } catch (error: any) {
             sessionResult.quizError = error.message;
+          }
+        }
+
+        // Create AI exercise if article exists and exercise missing
+        if (session.article && !session.aiExercise) {
+          sendProgress(`  🎮 Creating AI exercise...`);
+          try {
+            const exerciseResult = await workflowEngineOptimized.executeExerciseCreation(
+              {
+                projectId: chapter.projectId,
+                phase: 'exercise_creation',
+                onProgress: sendProgress,
+              },
+              session.id
+            );
+            sessionResult.exercise = exerciseResult;
+          } catch (error: any) {
+            sessionResult.exerciseError = error.message;
           }
         }
 
@@ -1434,6 +1480,72 @@ router.get('/projects/:projectId/exercises/batch', async (req, res, next) => {
     } catch (error: any) {
       res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
       res.end();
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Unified batch generation: Videos, Quizzes, and AI Exercises together
+ * GET /api/workflow/projects/:projectId/content/batch
+ */
+router.get('/projects/:projectId/content/batch', async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { numQuestions = 3 } = req.query;
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    let clientDisconnected = false;
+
+    // Handle client disconnect
+    req.on('close', () => {
+      clientDisconnected = true;
+      console.log(`[Batch Content] Client disconnected for project ${projectId}`);
+    });
+
+    const sendProgress = (message: string) => {
+      if (!clientDisconnected && !res.writableEnded) {
+        try {
+          res.write(`data: ${JSON.stringify({ type: 'progress', message })}\n\n`);
+        } catch (error) {
+          console.error('[Batch Content] Error sending progress:', error);
+          clientDisconnected = true;
+        }
+      }
+    };
+
+    try {
+      const result = await workflowEngineOptimized.executeBatchContentCreation(
+        {
+          projectId,
+          phase: 'video_creation',
+          onProgress: sendProgress,
+        },
+        Number(numQuestions)
+      );
+
+      if (!clientDisconnected && !res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+        res.end();
+      }
+    } catch (error: any) {
+      console.error('[Batch Content] Error during batch creation:', error);
+      if (!clientDisconnected && !res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+      }
     }
   } catch (error) {
     next(error);

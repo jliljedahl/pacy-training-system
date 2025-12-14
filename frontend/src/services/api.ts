@@ -377,6 +377,16 @@ export const workflowApi = {
   batchCreateExercises: (projectId: string, onProgress: (message: string) => void) =>
     createSSEPromise(`/api/workflow/projects/${projectId}/exercises/batch`, onProgress),
 
+  // Unified batch: Creates videos, quizzes, and exercises together
+  batchCreateAllContent: (
+    projectId: string,
+    numQuestions: number,
+    onProgress: (message: string) => void
+  ) => {
+    const url = `/api/workflow/projects/${projectId}/content/batch${numQuestions ? `?numQuestions=${numQuestions}` : ''}`;
+    return createSSEPromise(url, onProgress);
+  },
+
   approveExercise: (exerciseId: string) => api.post(`/workflow/exercises/${exerciseId}/approve`),
 
   saveExerciseFeedback: (exerciseId: string, feedback: string) =>
@@ -394,8 +404,14 @@ export const workflowApi = {
   updateQuizQuestions: (quizId: string, questions: any[]) =>
     api.patch(`/workflow/quizzes/${quizId}/questions`, { questions }),
 
-  batchCreateChapterComplete: (chapterId: string, onProgress: (message: string) => void) =>
-    createSSEPromise(`/api/workflow/chapters/${chapterId}/batch-complete`, onProgress),
+  batchCreateChapterComplete: (
+    chapterId: string,
+    numQuestions: number,
+    onProgress: (message: string) => void
+  ) => {
+    const url = `/api/workflow/chapters/${chapterId}/batch-complete${numQuestions ? `?numQuestions=${numQuestions}` : ''}`;
+    return createSSEPromise(url, onProgress);
+  },
 };
 
 export const contentApi = {
