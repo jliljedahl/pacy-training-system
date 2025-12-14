@@ -60,11 +60,11 @@ pacy-training-system/
 
 ## HIST Methodology
 
-- **Articles**: 800-1200 words (optimal: 800-1000)
+- **Articles**: 1000-1500 words (optimal: 1200-1400 for narrative flow)
 - **Video scripts**: ~250 words
 - **Theory/Practice**: 30-40% theory, 60-70% practice
-- **Reading time**: Max 5-7 minutes per session
-- **Style**: Concrete examples, role-specific, no abstractions
+- **Reading time**: Max 7-10 minutes per session
+- **Style**: Narrative flow, concrete examples, role-specific, minimal bullet lists
 
 ## Workflow Phases
 

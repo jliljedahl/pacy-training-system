@@ -50,7 +50,7 @@ export const agentModels: Record<string, ModelConfig> = {
   'article-writer': {
     provider: 'openai',
     model: MODELS.fast,
-    maxTokens: 4096,
+    maxTokens: 6000, // Increased for 1000-1500 word articles with better narrative flow
   },
   'fact-checker': {
     provider: 'openai',
