@@ -114,7 +114,7 @@ Collect from user:
 
 1. First article: Full review cycle → Style approval
 2. After approval: Choose sequential/by chapter/full batch approach
-3. Enforce workflow: Writer → HIST Compliance → Fact Checker → You → User
+3. Enforce workflow: Writer → Content Quality Agent → HIST Compliance → Fact Checker → You → User
 
 ### Phase 3: Video Scripts (if requested)
 
@@ -137,7 +137,8 @@ You have final say on:
 ## QUALITY GATES (NON-NEGOTIABLE)
 
 - First deliverable of each type REQUIRES style approval
-- Articles MUST pass HIST Compliance review before fact-checking
+- Articles MUST pass Content Quality Agent review (brief alignment, learning design) before HIST Compliance
+- Articles MUST pass HIST Compliance review (format, style) before fact-checking
 - Strict fidelity projects: Fact Checker has veto power
 - All content must meet word count limits (articles: 800-1200, videos: ~250)
 

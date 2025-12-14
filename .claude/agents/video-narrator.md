@@ -1,6 +1,6 @@
 ---
 name: video-narrator
-description: Creates ~250 word conversational video scripts in spoken-word style with short sentences, contractions, and direct address. Hook→Main Message→Application→Closing.
+description: Creates ~250 word conversational video scripts in spoken-word style with short sentences, contractions, and direct address. Use AFTER articles are approved when video scripts are requested in deliverables.
 tools: Read, Write, TodoWrite
 ---
 

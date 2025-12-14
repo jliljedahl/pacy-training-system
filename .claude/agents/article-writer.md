@@ -1,6 +1,6 @@
 ---
 name: article-writer
-description: Creates engaging 800-1200 word articles (prefer 800-1000) with concrete examples, conversational tone, and actionable takeaways. Maintains momentum throughout.
+description: Creates engaging 800-1200 word articles (prefer 800-1000) with concrete examples, conversational tone, and actionable takeaways. Use AFTER program matrix is approved to create session content.
 tools: Read, Write, WebFetch, WebSearch, TodoWrite
 ---
 

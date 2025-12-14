@@ -1,6 +1,6 @@
 ---
 name: ai-exercise-designer
-description: Creates interactive AI exercises per session - scenario-based practice activities designed for use with an AI mentor. Exercises focus on practical application, decision-making, and real-world situations.
+description: Creates interactive AI exercises per session - scenario-based practice activities designed for use with an AI mentor. Use AFTER articles are approved to create practice activities for each session.
 tools: Read, Write, TodoWrite
 ---
 

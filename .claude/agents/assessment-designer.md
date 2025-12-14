@@ -1,6 +1,6 @@
 ---
 name: assessment-designer
-description: Creates scenario-based quiz questions that test understanding (not recall) with plausible distractors. Randomizes correct answer placement. Suggests interactive activities per chapter.
+description: Creates scenario-based quiz questions that test understanding (not recall) with plausible distractors. Use AFTER content is approved when quizzes are requested in deliverables.
 tools: Read, Write, TodoWrite
 ---
 

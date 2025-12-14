@@ -35,12 +35,12 @@ pacy-training-system/
 │   ├── components/       # Reusable components
 │   └── services/         # API client
 ├── .claude/
-│   ├── agents/           # 11 AI agent definitions
+│   ├── agents/           # 13 AI agent definitions
 │   └── skills/           # Writing skills
 └── backend/prisma/schema.prisma
 ```
 
-## The 11 Agents
+## The 13 Agents
 
 | Agent                    | Role                                              |
 | ------------------------ | ------------------------------------------------- |
@@ -49,10 +49,12 @@ pacy-training-system/
 | source-analyst           | Analyzes client materials                         |
 | brief-interviewer        | Conversational onboarding                         |
 | article-writer           | Creates 800-1200 word HIST articles               |
+| content-quality-agent    | Validates learning quality and brief alignment    |
 | hist-compliance-editor   | Enforces HIST methodology                         |
 | fact-checker             | Verifies accuracy (veto power on strict fidelity) |
 | video-narrator           | Creates ~250 word video scripts                   |
 | assessment-designer      | Designs scenario-based quizzes                    |
+| ai-exercise-designer     | Creates interactive AI practice exercises         |
 | program-matrix-formatter | Formats matrix output                             |
 | company-researcher       | Analyzes company context                          |
 
@@ -69,7 +71,7 @@ pacy-training-system/
 1. **Onboarding**: Brief interview → Company analysis → Project config
 2. **Research & Debrief**: Research → Validation (contradictions/gaps/alternatives) → Auto-deepen if needed → 3 alternatives
 3. **Program Design**: Matrix creation → Feedback loop → Approval
-4. **Content Creation**: Article → HIST review → Fact check → Approve → Batch remaining
+4. **Content Creation**: Article → Content QA → HIST review → Fact check → Approve → Batch remaining
 5. **Videos/Quizzes**: If requested
 
 ## Environment Variables

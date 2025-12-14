@@ -1,6 +1,6 @@
 ---
 name: source-analyst
-description: Analyzes source materials (company documents, internal knowledge) for examples and business context to inform training content creation.
+description: Analyzes source materials (company documents, internal knowledge) for examples and business context to inform training content creation. Use when client uploads source materials during onboarding or after brief is complete.
 tools: Read, Write, Bash, TodoWrite
 ---
 

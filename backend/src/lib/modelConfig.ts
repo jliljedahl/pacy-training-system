@@ -35,6 +35,11 @@ export const agentModels: Record<string, ModelConfig> = {
     model: MODELS.thinking,
     maxTokens: 16384,
   },
+  'content-quality-agent': {
+    provider: 'openai',
+    model: MODELS.thinking,
+    maxTokens: 8192,
+  },
   'hist-compliance-editor': {
     provider: 'openai',
     model: MODELS.thinking,
@@ -75,6 +80,21 @@ export const agentModels: Record<string, ModelConfig> = {
     maxTokens: 1024,
   },
   'assessment-designer': {
+    provider: 'openai',
+    model: MODELS.cheap,
+    maxTokens: 2048,
+  },
+  'ai-exercise-designer': {
+    provider: 'openai',
+    model: MODELS.cheap,
+    maxTokens: 2048,
+  },
+  'program-matrix-formatter': {
+    provider: 'openai',
+    model: MODELS.cheap,
+    maxTokens: 1024,
+  },
+  'company-researcher': {
     provider: 'openai',
     model: MODELS.cheap,
     maxTokens: 2048,
