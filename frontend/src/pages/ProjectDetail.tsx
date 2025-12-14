@@ -776,9 +776,14 @@ export default function ProjectDetail() {
             <div class="print-date">
               Exported: ${new Date().toLocaleString('sv-SE')}
             </div>
-            <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js"></script>
             <script>
               const content = ${JSON.stringify(matrixContent)};
+              // Enable GFM (GitHub Flavored Markdown) for table support
+              marked.setOptions({
+                gfm: true,
+                breaks: true
+              });
               document.getElementById('content').innerHTML = marked.parse(content);
               setTimeout(() => window.print(), 500);
             </script>

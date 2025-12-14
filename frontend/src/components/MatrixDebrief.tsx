@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, Download, FileText } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import ChatCanvas from './ChatCanvas';
 import { debriefApi } from '../services/api';
 
@@ -99,12 +101,9 @@ export default function MatrixDebrief({
 
         {/* Simple Matrix View */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <div
-            className="prose max-w-none"
-            dangerouslySetInnerHTML={{
-              __html: matrixContent.replace(/\n/g, '<br/>'),
-            }}
-          />
+          <div className="prose max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{matrixContent}</ReactMarkdown>
+          </div>
         </div>
       </div>
     );
