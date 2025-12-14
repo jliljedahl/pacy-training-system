@@ -11,12 +11,15 @@ The Pacy Training System orchestrates multiple specialized AI agents to transfor
 **Key Features:**
 
 - Conversational brief interview for project setup
-- Multi-agent collaborative content creation
+- Multi-agent collaborative content creation (13 specialized agents)
 - Research validation with automatic gap-filling
 - HIST compliance enforcement (800-1200 word articles, 5-7 min sessions)
 - Source fidelity verification
 - Quality gates at each phase
 - Full workflow tracking and approval points
+- AI exercise generation for interactive practice
+- Unified batch content creation (articles + videos + quizzes + exercises)
+- Flexible post-approval workflow (batch all vs. chapter-by-chapter)
 
 ---
 
@@ -31,7 +34,7 @@ Backend API (Express + TypeScript)
     ↓
 Agent Orchestrator
     ↓
-11 Specialized AI Agents (OpenAI GPT-5.2)
+13 Specialized AI Agents (OpenAI GPT-5.2)
     ↓
 Database (PostgreSQL via Supabase)
 ```
@@ -71,21 +74,25 @@ const MODELS = {
 
 ### Agent Model Assignments
 
-| Agent                  | Model               | Purpose                            |
-| ---------------------- | ------------------- | ---------------------------------- |
-| content-architect      | gpt-5.2             | Orchestration, decision-making     |
-| research-director      | gpt-5.2             | Deep research, source verification |
-| hist-compliance-editor | gpt-5.2             | Quality enforcement                |
-| article-writer         | gpt-5.2-chat-latest | Content creation                   |
-| fact-checker           | gpt-5.2-chat-latest | Accuracy verification              |
-| source-analyst         | gpt-5.2-chat-latest | Material analysis                  |
-| brief-interviewer      | gpt-5.2-chat-latest | User onboarding                    |
-| video-narrator         | gpt-4.1-mini        | Script creation                    |
-| assessment-designer    | gpt-4.1-mini        | Quiz generation                    |
+| Agent                    | Model               | Purpose                            |
+| ------------------------ | ------------------- | ---------------------------------- |
+| content-architect        | gpt-5.2             | Orchestration, decision-making     |
+| research-director        | gpt-5.2             | Deep research, source verification |
+| hist-compliance-editor   | gpt-5.2             | Quality enforcement                |
+| article-writer           | gpt-5.2-chat-latest | Content creation                   |
+| content-quality-agent    | gpt-5.2-chat-latest | Learning quality validation        |
+| fact-checker             | gpt-5.2-chat-latest | Accuracy verification              |
+| source-analyst           | gpt-5.2-chat-latest | Material analysis                  |
+| brief-interviewer        | gpt-5.2-chat-latest | User onboarding                    |
+| video-narrator           | gpt-4.1-mini        | Script creation                    |
+| assessment-designer      | gpt-4.1-mini        | Quiz generation                    |
+| ai-exercise-designer     | gpt-4.1-mini        | Interactive AI exercise creation   |
+| program-matrix-formatter | gpt-5.2-chat-latest | Matrix formatting                  |
+| company-researcher       | gpt-5.2-chat-latest | Company context analysis           |
 
 ---
 
-## The 11 Specialized Agents
+## The 13 Specialized Agents
 
 ### 1. **Content Architect** (Main Coordinator)
 
@@ -134,7 +141,18 @@ const MODELS = {
   - 30-40% theory, 60-70% practice
   - Concrete, role-specific examples
 
-### 6. **HIST Compliance Editor** (Quality Enforcer)
+### 6. **Content Quality Agent** (Learning Design Validator)
+
+- **Role**: Validates learning design quality before HIST compliance
+- **Model**: gpt-5.2-chat-latest
+- **Checks**:
+  - Brief alignment and learning objectives
+  - Business context integration
+  - Topic accuracy and depth
+  - Engagement and theory-practice balance
+- **Actions**: Auto-fixes minor issues, reports major concerns
+
+### 7. **HIST Compliance Editor** (Quality Enforcer)
 
 - **Role**: Enforces HIST methodology compliance
 - **Model**: gpt-5.2
@@ -144,18 +162,18 @@ const MODELS = {
   - Concrete examples (no abstractions)
   - Narrative energy
 
-### 7. **Fact Checker** (Accuracy Verifier)
+### 8. **Fact Checker** (Accuracy Verifier)
 
 - **Role**: Verifies factual accuracy and source fidelity
 - **Model**: gpt-5.2-chat-latest
 - **Special**: VETO POWER on strict fidelity projects
 
-### 8. **Video Narrator** (Script Writer)
+### 9. **Video Narrator** (Script Writer)
 
 - **Role**: Creates ~250 word video scripts
 - **Model**: gpt-4.1-mini
 
-### 9. **Assessment Designer** (Quiz Creator)
+### 10. **Assessment Designer** (Quiz Creator)
 
 - **Role**: Designs scenario-based quizzes
 - **Model**: gpt-4.1-mini
@@ -164,12 +182,21 @@ const MODELS = {
   - Scenario-based, not trivial recall
   - Meaningful distractors
 
-### 10. **Program Matrix Formatter**
+### 11. **AI Exercise Designer** (Interactive Practice Creator)
+
+- **Role**: Creates scenario-based practice activities for AI mentor interactions
+- **Model**: gpt-4.1-mini
+- **Standards**:
+  - Real-world scenarios
+  - Decision-making focus
+  - Designed for use with AI coaching/mentoring
+
+### 12. **Program Matrix Formatter**
 
 - **Role**: Formats matrix output
 - **Model**: gpt-5.2-chat-latest
 
-### 11. **Company Researcher**
+### 13. **Company Researcher**
 
 - **Role**: Analyzes company websites for context
 - **Model**: gpt-5.2-chat-latest
@@ -236,12 +263,14 @@ const MODELS = {
 
 ---
 
-### **Phase 3: Article Creation**
+### **Phase 3: Test Session (First Session)**
 
-**Workflow per Article**:
+**Complete workflow for first session**:
 
 ```
 Article Writer creates draft
+    ↓
+Content Quality Agent validates learning design
     ↓
 HIST Compliance Editor reviews
     ↓ (if changes needed)
@@ -249,26 +278,47 @@ Article Writer revises
     ↓ (loop until compliant)
 Fact Checker verifies accuracy
     ↓
-User approval
+User approves article
+    ↓
+Video Narrator creates script
+    ↓
+User approves video
+    ↓
+Assessment Designer creates quiz
+    ↓
+User approves quiz
+    ↓
+AI Exercise Designer creates practice scenario
+    ↓
+User approves exercise
 ```
 
-**Batch Options** (after first article approved):
-
-- Sequential: One at a time
-- By Chapter: Complete one chapter, then next
-- Full Batch: All articles at once
+**Quality Gate**: All 4 content types approved individually before batch options appear
 
 ---
 
-### **Phase 4: Video Script Creation** (if requested)
+### **Phase 4: Batch Content Creation**
 
-~250 word scripts with visual notes
+After test session complete, user chooses:
 
----
+**Option 1: Generate ALL Remaining Content**
 
-### **Phase 5: Quiz Creation** (if requested)
+- Creates all articles, videos, quizzes, and AI exercises for all remaining sessions
+- Single batch operation
+- Fastest path to completion
 
-Scenario-based questions organized by chapter
+**Option 2: Generate Next Chapter Only**
+
+- Creates all 4 content types for all sessions in next chapter
+- After chapter complete, same 2-option prompt appears (recursive)
+- Provides granular control and review points
+
+**Unified Batch Creation**:
+
+- All content types generated together per session
+- Articles → Videos → Quizzes → AI Exercises
+- Progress tracking via Server-Sent Events (SSE)
+- Graceful handling of disconnects
 
 ---
 
@@ -285,8 +335,9 @@ User (Supabase Auth)
         │   └── sessions[]
         │       ├── article
         │       ├── videoScript
-        │       └── quiz
-        │           └── questions[]
+        │       ├── quiz
+        │       │   └── questions[]
+        │       └── aiExercise
         └── workflowSteps[]
 ```
 
@@ -479,10 +530,79 @@ POST   /api/workflow/projects/:id/approve-matrix     # Approve matrix
 ### Content Generation (SSE Streams)
 
 ```
-GET    /api/workflow/sessions/:id/article            # Generate single article
-GET    /api/workflow/projects/:id/articles/batch-all # Batch all articles
-GET    /api/workflow/projects/:id/videos/batch       # Batch all videos
-GET    /api/workflow/projects/:id/quizzes/batch      # Batch all quizzes
+GET    /api/workflow/sessions/:id/article              # Generate single article
+GET    /api/workflow/sessions/:id/video                # Generate single video
+GET    /api/workflow/sessions/:id/quiz                 # Generate single quiz
+GET    /api/workflow/sessions/:id/exercise             # Generate single AI exercise
+GET    /api/workflow/projects/:id/content/batch        # Unified: all videos + quizzes + exercises
+GET    /api/workflow/projects/:id/articles/batch-all   # Batch all articles only
+GET    /api/workflow/chapters/:id/batch-complete       # Complete chapter (all 4 content types)
+POST   /api/workflow/articles/:id/regenerate           # Regenerate with feedback
+POST   /api/workflow/videos/:id/regenerate             # Regenerate with feedback
+```
+
+---
+
+## External Access / Port Forwarding
+
+For remote testing, collaboration, and demos:
+
+### Setup ngrok Tunnel
+
+1. **Install ngrok** (Apple Silicon Mac):
+
+```bash
+curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-darwin-arm64.zip -o /tmp/ngrok.zip
+unzip /tmp/ngrok.zip -d ~
+chmod +x ~/ngrok
+```
+
+2. **Start tunnel**:
+
+```bash
+~/ngrok http 5173
+```
+
+3. **Configure Supabase** for the tunnel URL:
+   - Dashboard → Authentication → URL Configuration
+   - Add to **Redirect URLs**: `https://your-url.ngrok-free.dev/**`
+   - Update **Site URL**: `https://your-url.ngrok-free.dev`
+
+4. **Vite configuration** (already set):
+   - `allowedHosts` includes `.ngrok-free.dev` wildcard
+   - API proxy automatically works through tunnel
+
+---
+
+## Stability & Production Features
+
+### SSE Connection Management
+
+- **Disconnect Detection**: All long-running operations detect client disconnects
+- **Graceful Degradation**: Operations continue even if client drops
+- **Error Logging**: Comprehensive logging with operation-specific prefixes
+- **No Crash Guarantee**: Backend stays stable during network failures
+
+### Implemented on Endpoints
+
+- Matrix regeneration (`/projects/:id/matrix/regenerate`)
+- Unified batch content (`/projects/:id/content/batch`)
+- Chapter batch complete (`/chapters/:id/batch-complete`)
+- All SSE streaming endpoints
+
+### Error Handling
+
+```typescript
+// Client disconnect detection
+req.on('close', () => {
+  clientDisconnected = true;
+  console.log('[Operation] Client disconnected');
+});
+
+// Safe response writing
+if (!clientDisconnected && !res.writableEnded) {
+  res.write(data);
+}
 ```
 
 ---
@@ -506,5 +626,14 @@ Inspired by the HIST (High Intensity Skill Training) methodology for effective m
 
 ---
 
-**Last Updated**: 2025-12-13
-**Version**: 2.0.0
+**Last Updated**: 2025-12-14
+**Version**: 2.1.0
+
+### What's New in v2.1.0
+
+- **AI Exercises**: Fourth content type for interactive practice scenarios
+- **Unified Batch Creation**: Generate all content types together (videos + quizzes + exercises)
+- **Flexible Workflow**: Choose between batch-all or chapter-by-chapter generation
+- **13 Agents**: Added Content Quality Agent and AI Exercise Designer
+- **Enhanced Stability**: SSE disconnect handling prevents crashes
+- **External Access**: ngrok tunnel support for remote testing
