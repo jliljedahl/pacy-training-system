@@ -948,7 +948,17 @@ router.get('/sessions/:sessionId/test-session', async (req, res, next) => {
       res.write(`data: ${JSON.stringify({ type: 'complete', result: results })}\n\n`);
       res.end();
     } catch (error: any) {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      console.error('[Test Session] Error during test session creation:', error);
+      console.error('[Test Session] Error details:', {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        response: error.response?.data,
+      });
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Unknown error';
+      res.write(
+        `data: ${JSON.stringify({ type: 'error', message: `Test session failed: ${errorMessage}` })}\n\n`
+      );
       res.end();
     }
   } catch (error) {

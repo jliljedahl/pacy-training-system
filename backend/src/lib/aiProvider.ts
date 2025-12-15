@@ -8,9 +8,11 @@
 import OpenAI from 'openai';
 import { getModelConfig, getBatchModelConfig, ModelConfig } from './modelConfig';
 
-// Initialize OpenAI client
+// Initialize OpenAI client with extended timeout
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 120000, // 2 minutes
+  maxRetries: 0, // We'll handle retries ourselves
 });
 
 export interface ChatMessage {
@@ -47,6 +49,64 @@ export interface StreamOptions extends CompletionOptions {
  */
 function isNewGenerationModel(model: string): boolean {
   return model.startsWith('o1') || model.startsWith('gpt-5') || model.includes('gpt-5');
+}
+
+/**
+ * Sleep helper for retry delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry wrapper for OpenAI API calls with exponential backoff
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  operation = 'OpenAI API call'
+): Promise<T> {
+  let lastError: any;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+
+      // Check if error is retryable
+      const isRetryable =
+        error.status === 503 || // Service unavailable
+        error.status === 429 || // Rate limit
+        error.status === 502 || // Bad gateway
+        error.code === 'ECONNRESET' || // Connection reset
+        error.code === 'ETIMEDOUT' || // Timeout
+        error.message?.includes('timeout') ||
+        error.message?.includes('ECONNREFUSED');
+
+      if (!isRetryable || attempt === maxRetries) {
+        console.error(`[AI Provider] ${operation} failed after ${attempt + 1} attempts:`, {
+          status: error.status,
+          code: error.code,
+          message: error.message,
+        });
+        throw error;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt) * 1000;
+      console.log(
+        `[AI Provider] ${operation} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`,
+        {
+          status: error.status,
+          message: error.message,
+        }
+      );
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
 }
 
 /**
@@ -113,7 +173,11 @@ export async function getCompletion(options: CompletionOptions): Promise<Complet
     requestParams.max_tokens = maxTokens;
   }
 
-  const response = await openai.chat.completions.create(requestParams);
+  const response = await retryWithBackoff(
+    () => openai.chat.completions.create(requestParams),
+    3,
+    `${options.agentName} completion`
+  );
 
   const content = response.choices[0]?.message?.content || '';
 
@@ -152,12 +216,17 @@ async function getReasoningCompletion(
     ),
   ];
 
-  const response = await openai.chat.completions.create({
-    model: config.model,
-    messages,
-    max_completion_tokens: options.maxTokens || config.maxTokens || 16384,
-    // Note: o1 models don't support temperature parameter
-  });
+  const response = await retryWithBackoff(
+    () =>
+      openai.chat.completions.create({
+        model: config.model,
+        messages,
+        max_completion_tokens: options.maxTokens || config.maxTokens || 16384,
+        // Note: o1 models don't support temperature parameter
+      }),
+    3,
+    `${options.agentName} reasoning completion`
+  );
 
   const content = response.choices[0]?.message?.content || '';
 
@@ -218,7 +287,11 @@ export async function getStreamingCompletion(options: StreamOptions): Promise<Co
     requestParams.max_tokens = maxTokens;
   }
 
-  const stream = await openai.chat.completions.create(requestParams);
+  const stream = await retryWithBackoff(
+    () => openai.chat.completions.create(requestParams),
+    3,
+    `${options.agentName} streaming completion`
+  );
 
   let fullContent = '';
   let inputTokens = 0;
