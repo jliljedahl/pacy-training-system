@@ -23,8 +23,9 @@ export async function extractTextFromFile(filepath: string, filename: string): P
 
     if (ext === '.pdf') {
       console.log(`📄 Parsing PDF: ${filename}`);
-      const parser = new PDFParse({ buffer: fileBuffer });
+      const parser = new PDFParse({ data: fileBuffer });
       const result = await parser.getText();
+      await parser.destroy(); // Free memory
       return result.text;
     } else if (ext === '.docx' || ext === '.doc') {
       console.log(`📄 Parsing DOCX: ${filename}`);
@@ -171,8 +172,9 @@ router.post('/parse-brief', async (req, res, next) => {
         // Parse PDF using pdf-parse v2 API
         console.log(`📄 Parsing PDF: ${briefFile.name} (${briefFile.data.length} bytes)`);
         try {
-          const parser = new PDFParse({ buffer: briefFile.data });
+          const parser = new PDFParse({ data: briefFile.data });
           const result = await parser.getText();
+          await parser.destroy(); // Free memory
           briefText = result.text;
           console.log(`✅ PDF parsed successfully: ${briefText.length} characters extracted`);
         } catch (pdfError: any) {
