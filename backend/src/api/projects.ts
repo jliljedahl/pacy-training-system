@@ -6,8 +6,8 @@ import prisma from '../db/client';
 import { UploadedFile } from 'express-fileupload';
 import mammoth from 'mammoth';
 
-// Import pdf-parse - needs require() due to CommonJS module
-const pdfParse = require('pdf-parse');
+// Import pdf-parse v2 - needs require() due to CommonJS module
+const { PDFParse } = require('pdf-parse');
 
 const router = Router();
 
@@ -23,8 +23,9 @@ export async function extractTextFromFile(filepath: string, filename: string): P
 
     if (ext === '.pdf') {
       console.log(`📄 Parsing PDF: ${filename}`);
-      const pdfData = await pdfParse(fileBuffer);
-      return pdfData.text;
+      const parser = new PDFParse({ buffer: fileBuffer });
+      const result = await parser.getText();
+      return result.text;
     } else if (ext === '.docx' || ext === '.doc') {
       console.log(`📄 Parsing DOCX: ${filename}`);
       const result = await mammoth.extractRawText({ buffer: fileBuffer });
@@ -167,11 +168,12 @@ router.post('/parse-brief', async (req, res, next) => {
 
     try {
       if (ext === '.pdf') {
-        // Parse PDF
+        // Parse PDF using pdf-parse v2 API
         console.log(`📄 Parsing PDF: ${briefFile.name} (${briefFile.data.length} bytes)`);
         try {
-          const pdfData = await pdfParse(briefFile.data);
-          briefText = pdfData.text;
+          const parser = new PDFParse({ buffer: briefFile.data });
+          const result = await parser.getText();
+          briefText = result.text;
           console.log(`✅ PDF parsed successfully: ${briefText.length} characters extracted`);
         } catch (pdfError: any) {
           console.error('PDF parsing error:', {
