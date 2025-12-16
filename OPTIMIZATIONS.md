@@ -25,30 +25,38 @@ The system has been optimized to be **faster, cheaper, and more efficient** whil
 
 **Agents are now only invoked when needed:**
 
-| Agent                      | When Used                                            |
-| -------------------------- | ---------------------------------------------------- |
-| **research-director**      | ❌ Removed - integrated into content-architect       |
-| **source-analyst**         | Only if source materials uploaded                    |
-| **topic-expert**           | ❌ Removed - integrated into content-architect       |
-| **instructional-designer** | ❌ Removed - integrated into content-architect       |
-| **content-architect**      | Always (main coordinator)                            |
-| **article-writer**         | When creating articles                               |
-| **hist-compliance-editor** | When creating articles                               |
-| **fact-checker**           | When creating articles                               |
-| **video-narrator**         | Only if deliverables include videos                  |
-| **assessment-designer**    | Only if deliverables include quizzes                 |
-| **image-curator**          | ❌ Rarely needed - can be invoked manually if needed |
+| Agent                      | When Used                                                                 |
+| -------------------------- | ------------------------------------------------------------------------- |
+| **research-director**      | Only in dedicated Research & Debrief phase (separate from program design) |
+| **source-analyst**         | Only if source materials uploaded                                         |
+| **topic-expert**           | ❌ Removed - integrated into content-architect                            |
+| **instructional-designer** | ❌ Removed - integrated into content-architect                            |
+| **content-architect**      | Always (main coordinator for program design)                              |
+| **article-writer**         | When creating articles                                                    |
+| **hist-compliance-editor** | When creating articles                                                    |
+| **fact-checker**           | When creating articles                                                    |
+| **video-narrator**         | Only if deliverables include videos                                       |
+| **assessment-designer**    | Only if deliverables include quizzes                                      |
+| **ai-exercise-designer**   | Only if deliverables include AI exercises                                 |
+| **image-curator**          | ❌ Rarely needed - can be invoked manually if needed                      |
+
+**Note:** The system has two separate workflows:
+
+- **Program Design Workflow**: Uses optimized `workflowEngineOptimized` (no research-director)
+- **Research & Debrief Workflow**: Optional thorough research phase with validation (uses research-director)
 
 ### 3. Agent Consolidation
 
-**Original Program Design Workflow** (6 agents):
+#### Program Design Workflow (Matrix Creation)
+
+**Original Workflow** (6 agents):
 
 ```
 Research Director → Source Analyst → Topic Expert →
 Instructional Designer → Assessment Designer → Content Architect
 ```
 
-**Optimized Program Design Workflow** (1-2 agents):
+**Optimized Workflow** (1-2 agents):
 
 ```
 Content Architect (does research + architecture + matrix)
@@ -58,9 +66,25 @@ Content Architect (does research + architecture + matrix)
 **Benefits:**
 
 - 75% fewer API calls for program design
-- Faster completion (minutes instead of 10+ minutes)
+- Faster completion (2-4 minutes instead of 10+ minutes)
 - Lower token usage
 - Less chance of rate limit issues
+
+#### Research & Debrief Workflow (Optional)
+
+This is a **separate, optional workflow** for thorough external research with validation:
+
+```
+Research Director → Validation → 3 Alternatives → User Selection
+```
+
+**When to use:**
+
+- When client wants thorough external research with validation
+- When exploring multiple strategic approaches
+- When strict fact-checking is critical
+
+**Note:** This workflow is intentionally kept separate and thorough, using research-director for comprehensive research with contradiction detection and alternative perspectives.
 
 **Original Article Workflow** (6 agents):
 
@@ -83,11 +107,13 @@ Article Writer → HIST Compliance → Fact Checker
 
 ## Token Savings
 
-### Per Program Design:
+### Per Program Design (Matrix Creation):
 
 - **Before**: ~6 agents × 4000 tokens = ~24,000 tokens
 - **After**: ~1-2 agents × 2500 tokens = ~2,500-5,000 tokens
 - **Savings**: 80-90% reduction
+
+**Note:** Optional Research & Debrief workflow adds ~10,000-15,000 tokens when used
 
 ### Per Article:
 
@@ -131,39 +157,62 @@ The removed agents were doing work that can be done by a single smart agent (Con
 
 ## How to Use
 
-The optimized workflow is **automatically active**. No changes needed to your usage:
+The system has **two workflows** you can use:
 
-1. Create project (same as before)
-2. Click "Start Program Design" (now faster!)
-3. Approve matrix (same as before)
-4. Create articles (now faster!)
+### Workflow 1: Quick Program Design (Recommended)
 
-## Switching Between Workflows
+**Optimized workflow - automatically active:**
 
-The system now has two workflow engines:
+1. Create project
+2. Click "Start Program Design" → Fast matrix creation (2-4 minutes)
+3. Approve matrix
+4. Create articles/videos/quizzes
 
-- **`workflowEngineOptimized`** - Default (recommended)
-- **`workflowEngine`** - Original (available if needed)
+**Use when:** Standard program creation, tight deadlines, client has clear requirements
 
-To switch back to the original workflow, edit `backend/src/api/workflow.ts` and change:
+### Workflow 2: Research & Debrief (Optional)
 
-```typescript
-workflowEngineOptimized.executeProgramDesign;
-```
+**Thorough research with validation:**
 
-back to:
+1. Create project
+2. Click "Start Research" → Comprehensive research phase (5-10 minutes)
+3. Review 3 alternative approaches
+4. Select preferred approach
+5. Click "Start Program Design" → Creates matrix based on selected approach
+6. Approve matrix
+7. Create articles/videos/quizzes
 
-```typescript
-workflowEngine.executeProgramDesign;
-```
+**Use when:** Complex topics, need external validation, exploring multiple strategic approaches, strict fact-checking requirements
+
+## Technical Details
+
+The system uses different workflow engines:
+
+- **`workflowEngineOptimized`** - Used for Program Design (matrix creation)
+- **`debriefWorkflowService`** - Used for Research & Debrief phase
+- **`workflowEngine`** - Original workflow (deprecated, available for reference)
+
+All endpoints in `backend/src/api/workflow.ts` use the optimized engines by default.
 
 ## Agent Summary
 
-**Total agents available**: 11
-**Agents used per program design**: 1-2 (down from 6)
-**Agents used per article**: 3 (down from 6)
-**Agents used per video**: 1 (only if requested)
-**Agents used per quiz**: 1 (only if requested)
+**Total agents available**: 13
+
+### Quick Program Design Workflow:
+
+- **Program design**: 1-2 agents (down from 6)
+- **Per article**: 3 agents (down from 6)
+- **Per video**: 1 agent (only if requested)
+- **Per quiz**: 1 agent (only if requested)
+- **Per AI exercise**: 1 agent (only if requested)
+
+### Research & Debrief Workflow (Optional):
+
+- **Research phase**: 1 agent (research-director)
+- **Validation**: Uses research-director
+- **Alternative generation**: Uses content-architect
+
+**Total for standard program**: 1-2 agents for design + 4 agents per session (article/video/quiz/exercise)
 
 ## Rate Limit Best Practices
 
@@ -189,4 +238,18 @@ Potential further improvements:
 
 ---
 
-**Bottom line**: The system is now **3-4x faster**, **60-70% cheaper**, and **handles rate limits automatically**, while maintaining the same quality standards.
+## Summary
+
+The system now offers **two complementary workflows**:
+
+1. **Quick Program Design** (Default): 3-4x faster, 60-70% cheaper, optimized for standard program creation
+2. **Research & Debrief** (Optional): Thorough external research with validation for complex topics
+
+Both workflows:
+
+- Handle rate limits automatically with retry logic
+- Maintain HIST quality standards
+- Use the latest Claude 4.5 models
+- Include all content types (articles, videos, quizzes, AI exercises)
+
+**Choose Quick Program Design** for most projects. **Add Research & Debrief** when you need comprehensive external research with validation and alternative approaches.
