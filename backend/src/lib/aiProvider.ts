@@ -1,16 +1,24 @@
 /**
  * AI Provider for Pacy Training System
  *
- * Provides a unified interface for AI model calls using OpenAI.
- * Supports both GPT-4o models and o1 reasoning models.
+ * Provides a unified interface for AI model calls.
+ * Supports both Anthropic Claude and OpenAI models.
  */
 
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { getModelConfig, getBatchModelConfig, ModelConfig } from './modelConfig';
 
 // Initialize OpenAI client with extended timeout
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 120000, // 2 minutes
+  maxRetries: 0, // We'll handle retries ourselves
+});
+
+// Initialize Anthropic client with extended timeout
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
   timeout: 120000, // 2 minutes
   maxRetries: 0, // We'll handle retries ourselves
 });
@@ -132,13 +140,61 @@ function isReasoningModel(config: ModelConfig): boolean {
 }
 
 /**
+ * Get a completion from Anthropic Claude
+ */
+async function getAnthropicCompletion(
+  options: CompletionOptions,
+  config: ModelConfig
+): Promise<CompletionResult> {
+  // Convert messages to Anthropic format (no system role in messages array)
+  const messages: Anthropic.MessageParam[] = options.messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
+  const maxTokens = options.maxTokens || config.maxTokens || 4096;
+
+  const response = await retryWithBackoff(
+    () =>
+      anthropic.messages.create({
+        model: config.model,
+        max_tokens: maxTokens,
+        system: options.systemPrompt, // System prompt is separate in Anthropic
+        messages,
+        temperature: options.temperature ?? 0.7,
+      }),
+    3,
+    `${options.agentName} Anthropic completion`
+  );
+
+  const content = response.content[0]?.type === 'text' ? response.content[0].text : '';
+
+  return {
+    content,
+    model: response.model,
+    usage: {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+    },
+  };
+}
+
+/**
  * Get a completion from the AI model
- * Handles both standard GPT models and o1 reasoning models
+ * Routes to Anthropic or OpenAI based on provider
  */
 export async function getCompletion(options: CompletionOptions): Promise<CompletionResult> {
   const config = options.isBatch
     ? getBatchModelConfig(options.agentName)
     : getModelConfig(options.agentName);
+
+  // Route to Anthropic if provider is anthropic
+  if (config.provider === 'anthropic') {
+    return getAnthropicCompletion(options, config);
+  }
 
   // o1 models have different requirements
   if (isReasoningModel(config)) {
@@ -242,13 +298,77 @@ async function getReasoningCompletion(
 }
 
 /**
+ * Get a streaming completion from Anthropic Claude
+ */
+async function getAnthropicStreamingCompletion(
+  options: StreamOptions,
+  config: ModelConfig
+): Promise<CompletionResult> {
+  const messages: Anthropic.MessageParam[] = options.messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
+  const maxTokens = options.maxTokens || config.maxTokens || 4096;
+
+  const stream = await retryWithBackoff(
+    () =>
+      anthropic.messages.create({
+        model: config.model,
+        max_tokens: maxTokens,
+        system: options.systemPrompt,
+        messages,
+        temperature: options.temperature ?? 0.7,
+        stream: true,
+      }),
+    3,
+    `${options.agentName} Anthropic streaming`
+  );
+
+  let fullContent = '';
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let modelName = config.model;
+
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      const content = event.delta.text;
+      fullContent += content;
+      options.onChunk(content);
+    } else if (event.type === 'message_start') {
+      inputTokens = event.message.usage.input_tokens;
+      modelName = event.message.model;
+    } else if (event.type === 'message_delta') {
+      outputTokens = event.usage.output_tokens;
+    }
+  }
+
+  return {
+    content: fullContent,
+    model: modelName,
+    usage: {
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+    },
+  };
+}
+
+/**
  * Get a streaming completion from the AI model
- * Note: o1 reasoning models don't support streaming, so they fall back to regular completion
+ * Routes to Anthropic or OpenAI based on provider
  */
 export async function getStreamingCompletion(options: StreamOptions): Promise<CompletionResult> {
   const config = options.isBatch
     ? getBatchModelConfig(options.agentName)
     : getModelConfig(options.agentName);
+
+  // Route to Anthropic if provider is anthropic
+  if (config.provider === 'anthropic') {
+    return getAnthropicStreamingCompletion(options, config);
+  }
 
   // o1 models don't support streaming - fall back to regular completion
   if (isReasoningModel(config)) {

@@ -1,7 +1,7 @@
 /**
  * Model Configuration for Pacy Training System
  *
- * All content creation agents use OpenAI models.
+ * All content creation agents use Anthropic Claude models.
  * See CLAUDE.md for model reference.
  */
 
@@ -14,95 +14,94 @@ export interface ModelConfig {
   isReasoningModel?: boolean;
 }
 
-// OpenAI model constants
+// Anthropic Claude model constants
 const MODELS = {
-  thinking: 'gpt-5.2', // For reasoning tasks
-  fast: 'gpt-5.2-chat-latest', // For standard tasks
-  coding: 'gpt-5-codex', // For code generation
-  cheap: 'gpt-4.1-mini', // For simple/batch tasks
+  thinking: 'claude-opus-4-5-20251101', // For reasoning tasks
+  fast: 'claude-sonnet-4-5-20250929', // For standard tasks (what I'm running on!)
+  cheap: 'claude-haiku-4-5-20251001', // For simple/batch tasks
 };
 
-// Agent model configurations - all using OpenAI
+// Agent model configurations - all using Anthropic Claude
 export const agentModels: Record<string, ModelConfig> = {
-  // Thinking/reasoning tasks - gpt-5.2
+  // Thinking/reasoning tasks - Claude Opus 4
   'content-architect': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.thinking,
     maxTokens: 16384,
   },
   'research-director': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.thinking,
     maxTokens: 16384,
   },
   'content-quality-agent': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.thinking,
     maxTokens: 8192,
   },
   'hist-compliance-editor': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.thinking,
     maxTokens: 8192,
   },
 
-  // Standard tasks - gpt-5.2-chat-latest
+  // Standard tasks - Claude Sonnet 4.5
   'article-writer': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.fast,
     maxTokens: 6000, // Increased for 1000-1500 word articles with better narrative flow
   },
   'fact-checker': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.fast,
     maxTokens: 2048,
   },
   'source-analyst': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.fast,
     maxTokens: 4096,
   },
   'brief-interviewer': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.fast,
     maxTokens: 1024,
   },
 
-  // Simple/batch tasks - gpt-4.1-mini
+  // Simple/batch tasks - Claude Haiku 3.5
   'article-writer-batch': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.cheap,
     maxTokens: 4096,
   },
   'video-narrator': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.cheap,
     maxTokens: 1024,
   },
   'assessment-designer': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.cheap,
     maxTokens: 2048,
   },
   'ai-exercise-designer': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.cheap,
     maxTokens: 2048,
   },
   'program-matrix-formatter': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.cheap,
     maxTokens: 1024,
   },
   'company-researcher': {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.cheap,
     maxTokens: 2048,
   },
 
   // Default fallback
   default: {
-    provider: 'openai',
+    provider: 'anthropic',
     model: MODELS.fast,
     maxTokens: 4096,
   },
