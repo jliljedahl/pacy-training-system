@@ -1,5 +1,7 @@
 import { agentOrchestrator } from './agentOrchestrator';
 import prisma from '../db/client';
+import path from 'path';
+import { extractTextFromFile } from '../api/projects';
 
 export type WorkflowPhase =
   | 'information_gathering'
@@ -34,6 +36,35 @@ export class WorkflowEngineOptimized {
     if (!project) throw new Error('Project not found');
 
     onProgress?.('📋 Starting Optimized Program Design...');
+
+    // Read source material content if available
+    let sourceMaterialsContent = '';
+    if (project.sourceMaterials.length > 0) {
+      onProgress?.('📄 Reading source materials...');
+      const uploadDir = path.resolve(process.env.UPLOAD_DIR || '../uploads');
+
+      const materialsWithContent = await Promise.all(
+        project.sourceMaterials.map(async (material) => {
+          const filepath = path.join(uploadDir, material.filepath);
+          const content = await extractTextFromFile(filepath, material.filename);
+          return {
+            filename: material.filename,
+            type: material.type,
+            content,
+          };
+        })
+      );
+
+      sourceMaterialsContent = materialsWithContent
+        .map(
+          (m) => `
+=== ${m.filename} (${m.type}) ===
+${m.content}
+===========================
+`
+        )
+        .join('\n\n');
+    }
 
     // COMBINED STEP: Research + Source Analysis + Architecture + Program Matrix
     // All done by Content Architect who coordinates as needed
@@ -71,7 +102,10 @@ SOURCE MATERIALS PROVIDED:
 ${project.sourceMaterials.map((m) => `- ${m.filename} (${m.type})`).join('\n')}
 Strict Fidelity Required: ${project.strictFidelity}
 
-Note: Analyze these materials and incorporate their insights.
+FULL SOURCE MATERIAL CONTENT:
+${sourceMaterialsContent}
+
+Note: The full text content of all source materials is provided above. Analyze these materials thoroughly and incorporate their insights, terminology, and examples.
 `
     : 'No source materials provided - base content on research and best practices.'
 }
@@ -276,6 +310,34 @@ Keep the entire response focused and under 2000 words. Be specific and actionabl
 
     onProgress?.(`📝 Creating article for Session ${session.number}: ${session.name}...`);
 
+    // Read source material content if available
+    let sourceMaterialsContent = '';
+    if (project.sourceMaterials.length > 0) {
+      const uploadDir = path.resolve(process.env.UPLOAD_DIR || '../uploads');
+
+      const materialsWithContent = await Promise.all(
+        project.sourceMaterials.map(async (material) => {
+          const filepath = path.join(uploadDir, material.filepath);
+          const content = await extractTextFromFile(filepath, material.filename);
+          return {
+            filename: material.filename,
+            type: material.type,
+            content,
+          };
+        })
+      );
+
+      sourceMaterialsContent = materialsWithContent
+        .map(
+          (m) => `
+=== ${m.filename} (${m.type}) ===
+${m.content}
+===========================
+`
+        )
+        .join('\n\n');
+    }
+
     // Step 1: Article Writer
     const writerStep = await this.createWorkflowStep(
       projectId,
@@ -305,6 +367,11 @@ ${
     ? `
 SOURCE MATERIALS: ${project.sourceMaterials.map((m) => m.filename).join(', ')}
 ${project.strictFidelity ? 'STRICT FIDELITY REQUIRED - Follow sources exactly.' : 'Use sources for context and examples.'}
+
+FULL SOURCE MATERIAL CONTENT:
+${sourceMaterialsContent}
+
+Use the full content above to inform your article. Extract relevant information, examples, and terminology from these sources.
 `
     : ''
 }
@@ -316,8 +383,11 @@ REQUIREMENTS:
 - 30-40% theory, 60-70% practice
 - Scannable structure with short paragraphs
 - Engaging from start to finish
-- Proper source citations in academic format
 - **CRITICAL: State WIIFM (what reader will learn) early in opening (first 2 paragraphs)**
+- **CRITICAL: ALWAYS include a "References" or "Sources" section at the END of the article with proper academic citations**
+  - Include all sources used (research, source materials, etc.)
+  - Use standard academic format (Author, Year, Title, Publisher/URL)
+  - Even if minimal research was done, cite at least 2-3 credible sources
 
 ${
   isFirstInProgram
@@ -1247,24 +1317,46 @@ Requirements:
 
     // Parse quiz questions from the result (simplified parsing)
     // The result should be a table with: Fråga | a | b | c | Rätt svar
+    // OR with row numbers: # | Fråga | a | b | c | Rätt svar
     const questionLines = quizResult.split('\n').filter((line) => line.includes('|'));
     const questions = [];
 
     for (const line of questionLines) {
-      if (line.trim().startsWith('|') && !line.includes('Fråga')) {
-        const parts = line
-          .split('|')
-          .map((p) => p.trim())
-          .filter((p) => p);
-        if (parts.length >= 5) {
-          questions.push({
-            question: parts[0],
-            optionA: parts[1],
-            optionB: parts[2],
-            optionC: parts[3],
-            correctAnswer: parts[4].toLowerCase().trim(),
-          });
-        }
+      // Skip header rows and separator rows
+      if (
+        !line.trim().startsWith('|') ||
+        line.includes('Fråga') ||
+        line.includes('---') ||
+        line.includes('===')
+      ) {
+        continue;
+      }
+
+      const parts = line
+        .split('|')
+        .map((p) => p.trim())
+        .filter((p) => p);
+
+      // Handle two formats:
+      // Format 1 (no row numbers): Question | A | B | C | Answer
+      // Format 2 (with row numbers): 1 | Question | A | B | C | Answer
+      let questionIndex = 0;
+      let optionStartIndex = 1;
+
+      // If first part is a number, it's a row number - skip it
+      if (parts.length >= 6 && /^\d+$/.test(parts[0])) {
+        questionIndex = 1;
+        optionStartIndex = 2;
+      }
+
+      if (parts.length >= questionIndex + 5) {
+        questions.push({
+          question: parts[questionIndex],
+          optionA: parts[optionStartIndex],
+          optionB: parts[optionStartIndex + 1],
+          optionC: parts[optionStartIndex + 2],
+          correctAnswer: parts[optionStartIndex + 3].toLowerCase().trim(),
+        });
       }
     }
 

@@ -163,26 +163,7 @@ export default function ProjectDetail() {
     try {
       await workflowApi.approveArticle(articleId);
       await loadProject();
-
-      // After approving first article, check if we should auto-generate all remaining articles
-      const firstArticle = project?.chapters
-        ?.flatMap((c: any) => c.sessions)
-        ?.find((s: any) => s.article?.id === articleId);
-
-      if (firstArticle) {
-        const allSessions = project?.chapters?.flatMap((c: any) => c.sessions) || [];
-        const sessionsWithoutArticles = allSessions.filter((s: any) => !s.article);
-
-        if (sessionsWithoutArticles.length > 0) {
-          const shouldBatch = confirm(
-            `Du har godkänt första artikeln. Vill du generera alla ${sessionsWithoutArticles.length} återstående artiklar automatiskt?`
-          );
-
-          if (shouldBatch) {
-            await batchCreateAllArticles();
-          }
-        }
-      }
+      // No batch prompt here - wait until ALL 4 content types are approved (article, video, quiz, exercise)
     } catch (error) {
       console.error('Failed to approve article:', error);
       alert('Failed to approve article');

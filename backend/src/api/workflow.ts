@@ -900,7 +900,7 @@ router.get('/sessions/:sessionId/test-session', async (req, res, next) => {
       const results: any = {};
 
       // Step 1: Create article
-      sendProgress('📝 Step 1/3: Creating article...');
+      sendProgress('📝 Step 1/4: Creating article...');
       const articleResult = await workflowEngineOptimized.executeArticleCreation(
         {
           projectId: session.chapter.projectId,
@@ -914,7 +914,7 @@ router.get('/sessions/:sessionId/test-session', async (req, res, next) => {
       sendProgress('✅ Article created!');
 
       // Step 2: Create video script
-      sendProgress('🎬 Step 2/3: Creating video script...');
+      sendProgress('🎬 Step 2/4: Creating video script...');
       const videoResult = await workflowEngineOptimized.executeVideoCreation(
         {
           projectId: session.chapter.projectId,
@@ -927,7 +927,7 @@ router.get('/sessions/:sessionId/test-session', async (req, res, next) => {
       sendProgress('✅ Video script created!');
 
       // Step 3: Create quiz
-      sendProgress('🎯 Step 3/3: Creating quiz...');
+      sendProgress('🎯 Step 3/4: Creating quiz...');
       const project = await prisma.project.findUnique({
         where: { id: session.chapter.projectId },
       });
@@ -943,7 +943,20 @@ router.get('/sessions/:sessionId/test-session', async (req, res, next) => {
       results.quiz = quizResult;
       sendProgress('✅ Quiz created!');
 
-      sendProgress('🎉 Test session complete! All content created.');
+      // Step 4: Create AI exercise
+      sendProgress('🎮 Step 4/4: Creating AI exercise...');
+      const exerciseResult = await workflowEngineOptimized.executeExerciseCreation(
+        {
+          projectId: session.chapter.projectId,
+          phase: 'exercise_creation',
+          onProgress: sendProgress,
+        },
+        sessionId
+      );
+      results.exercise = exerciseResult;
+      sendProgress('✅ AI exercise created!');
+
+      sendProgress('🎉 Test session complete! All 4 content types created.');
 
       res.write(`data: ${JSON.stringify({ type: 'complete', result: results })}\n\n`);
       res.end();
@@ -1120,6 +1133,9 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
 
         const sessionResult: any = { sessionId: session.id, sessionNumber: session.number };
 
+        // Track if article exists (either pre-existing or just created)
+        let hasArticle = !!session.article;
+
         // Create article if missing
         if (!session.article) {
           sendProgress(`  📝 Creating article...`);
@@ -1134,6 +1150,7 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
               false
             );
             sessionResult.article = articleResult;
+            hasArticle = true; // Article now exists
 
             // Apply feedback if available
             if (articleFeedback) {
@@ -1144,11 +1161,12 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
             }
           } catch (error: any) {
             sessionResult.articleError = error.message;
+            hasArticle = false; // Article creation failed
           }
         }
 
-        // Create video if article exists and video missing
-        if (session.article && !session.videoScript) {
+        // Create video if article exists (or was just created) and video missing
+        if (hasArticle && !session.videoScript) {
           sendProgress(`  🎬 Creating video script...`);
           try {
             const videoResult = await workflowEngineOptimized.executeVideoCreation(
@@ -1173,8 +1191,8 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
           }
         }
 
-        // Create quiz if article exists and quiz missing
-        if (session.article && !session.quiz) {
+        // Create quiz if article exists (or was just created) and quiz missing
+        if (hasArticle && !session.quiz) {
           sendProgress(`  🎯 Creating quiz...`);
           try {
             const quizResult = await workflowEngineOptimized.executeQuizCreation(
@@ -1200,8 +1218,8 @@ router.get('/chapters/:chapterId/batch-complete', async (req, res, next) => {
           }
         }
 
-        // Create AI exercise if article exists and exercise missing
-        if (session.article && !session.aiExercise) {
+        // Create AI exercise if article exists (or was just created) and exercise missing
+        if (hasArticle && !session.aiExercise) {
           sendProgress(`  🎮 Creating AI exercise...`);
           try {
             const exerciseResult = await workflowEngineOptimized.executeExerciseCreation(

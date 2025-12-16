@@ -5,9 +5,42 @@ import fs from 'fs/promises';
 import prisma from '../db/client';
 import { UploadedFile } from 'express-fileupload';
 import mammoth from 'mammoth';
+
+// Import pdf-parse - needs require() due to CommonJS module
 const pdfParse = require('pdf-parse');
 
 const router = Router();
+
+/**
+ * Helper function to extract text content from uploaded files
+ * Supports PDF, DOCX, and TXT formats
+ */
+export async function extractTextFromFile(filepath: string, filename: string): Promise<string> {
+  const ext = path.extname(filename).toLowerCase();
+
+  try {
+    const fileBuffer = await fs.readFile(filepath);
+
+    if (ext === '.pdf') {
+      console.log(`📄 Parsing PDF: ${filename}`);
+      const pdfData = await pdfParse(fileBuffer);
+      return pdfData.text;
+    } else if (ext === '.docx' || ext === '.doc') {
+      console.log(`📄 Parsing DOCX: ${filename}`);
+      const result = await mammoth.extractRawText({ buffer: fileBuffer });
+      return result.value;
+    } else if (ext === '.txt') {
+      console.log(`📄 Reading TXT: ${filename}`);
+      return fileBuffer.toString('utf-8');
+    } else {
+      console.warn(`⚠️  Unsupported file type for ${filename}: ${ext}`);
+      return `[Cannot read file type: ${ext}]`;
+    }
+  } catch (error: any) {
+    console.error(`❌ Error reading file ${filename}:`, error.message);
+    return `[Error reading file: ${error.message}]`;
+  }
+}
 
 // Get all projects (filtered by user if authenticated)
 router.get('/', async (req, res, _next) => {
@@ -135,23 +168,46 @@ router.post('/parse-brief', async (req, res, next) => {
     try {
       if (ext === '.pdf') {
         // Parse PDF
-        const pdfData = await pdfParse(briefFile.data);
-        briefText = pdfData.text;
+        console.log(`📄 Parsing PDF: ${briefFile.name} (${briefFile.data.length} bytes)`);
+        try {
+          const pdfData = await pdfParse(briefFile.data);
+          briefText = pdfData.text;
+          console.log(`✅ PDF parsed successfully: ${briefText.length} characters extracted`);
+        } catch (pdfError: any) {
+          console.error('PDF parsing error:', {
+            message: pdfError.message,
+            stack: pdfError.stack,
+            name: pdfError.name,
+          });
+          return res.status(500).json({
+            error: 'Failed to read PDF file',
+            details: pdfError.message,
+          });
+        }
       } else if (ext === '.docx' || ext === '.doc') {
         // Parse DOCX
+        console.log(`📄 Parsing DOCX: ${briefFile.name}`);
         const result = await mammoth.extractRawText({ buffer: briefFile.data });
         briefText = result.value;
       } else if (ext === '.txt') {
         // Plain text
+        console.log(`📄 Reading TXT: ${briefFile.name}`);
         briefText = briefFile.data.toString('utf-8');
       } else {
         return res
           .status(400)
           .json({ error: 'Unsupported file type. Please upload PDF, DOCX, or TXT' });
       }
-    } catch (parseError) {
-      console.error('File parsing error:', parseError);
-      return res.status(500).json({ error: 'Failed to read document content' });
+    } catch (parseError: any) {
+      console.error('File parsing error:', {
+        message: parseError.message,
+        type: ext,
+        fileName: briefFile.name,
+      });
+      return res.status(500).json({
+        error: 'Failed to read document content',
+        details: parseError.message,
+      });
     }
 
     if (!briefText || briefText.trim().length === 0) {
