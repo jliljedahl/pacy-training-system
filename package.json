@@ -23,7 +23,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "typecheck:backend": "cd backend && npx tsc --noEmit",
     "typecheck:frontend": "cd frontend && npx tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\""
   },
   "lint-staged": {
     "*.{ts,tsx}": [
