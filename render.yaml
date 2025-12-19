@@ -1,0 +1,65 @@
+services:
+  # Backend API Service
+  - type: web
+    name: pacy-backend
+    env: node
+    region: frankfurt  # EU region closest to Supabase
+    plan: starter  # Free tier, upgrade to starter ($7/mo) for production
+    buildCommand: |
+      npm install
+      cd backend
+      npx prisma generate
+      npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      # Database - Supabase PostgreSQL
+      - key: DATABASE_URL
+        sync: false  # Set in Render Dashboard
+      - key: DIRECT_URL
+        sync: false  # Set in Render Dashboard
+
+      # Supabase Auth
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+
+      # AI Provider
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # Server Config
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: MAX_FILE_SIZE
+        value: 52428800
+
+    # Persistent disk for file uploads
+    disk:
+      name: pacy-uploads
+      mountPath: /var/data/uploads
+      sizeGB: 1
+
+    # Health check configuration
+    healthCheckPath: /health
+
+    # Auto-deploy from GitHub
+    autoDeploy: true
+
+    # Branch to deploy from
+    branch: main
+
+# Deployment notes:
+# 1. Connect your GitHub repository to Render
+# 2. Set environment variables in Render Dashboard (Settings > Environment)
+# 3. Use the same Supabase credentials from backend/.env
+# 4. Frontend will connect to: https://pacy-backend.onrender.com
+# 5. Update frontend API_URL to point to Render backend
