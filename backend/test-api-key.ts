@@ -58,7 +58,27 @@ anthropic.messages
   .catch((error: any) => {
     console.error('❌ ERROR: API key test failed\n');
 
-    if (error.status === 401 || error.status === 403) {
+    // Check for billing/credit errors
+    const errorMessage = error.message || error.error?.message || '';
+    const isBillingError =
+      error.status === 402 ||
+      errorMessage.toLowerCase().includes('credit balance') ||
+      errorMessage.toLowerCase().includes('billing') ||
+      errorMessage.toLowerCase().includes('insufficient funds') ||
+      errorMessage.toLowerCase().includes('add funds');
+
+    if (isBillingError) {
+      console.error('💳 Billing/Credit Error:');
+      console.error('   Your Anthropic account has insufficient credits.');
+      console.error(`   Error: ${errorMessage}\n`);
+      console.error('💡 Solutions:');
+      console.error(
+        '   1. Check your account balance: https://console.anthropic.com/settings/billing'
+      );
+      console.error('   2. Add credits to your account');
+      console.error('   3. If you just added credits, wait a few minutes for them to activate');
+      console.error("   4. Verify you're using the correct API key for the account with credits\n");
+    } else if (error.status === 401 || error.status === 403) {
       console.error('🔐 Authentication Error:');
       console.error('   Your API key is invalid or expired.');
       console.error('   Please check your API key at: https://console.anthropic.com/\n');
@@ -71,7 +91,11 @@ anthropic.messages
     } else {
       console.error('Error details:');
       console.error(`   Status: ${error.status || 'Unknown'}`);
-      console.error(`   Message: ${error.message || 'Unknown error'}\n`);
+      console.error(`   Message: ${errorMessage || 'Unknown error'}`);
+      if (error.error) {
+        console.error(`   Error object:`, error.error);
+      }
+      console.error('');
     }
 
     process.exit(1);

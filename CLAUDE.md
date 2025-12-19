@@ -5,11 +5,13 @@
 ## Quick Start
 
 ```bash
-npm run install:all    # Install dependencies
-npm run dev            # Start both servers (frontend :5173, backend :3001)
-npm run lint           # ESLint check
-npm run format         # Prettier format
+npm run install:all              # Install dependencies
+bash .claude/scripts/start.sh     # Start servers (cleans old processes first)
+npm run lint                      # ESLint check
+npm run format                    # Prettier format
 ```
+
+**⚠️ Important:** Always use `.claude/scripts/start.sh` instead of `npm run dev` directly to prevent multiple parallel backend instances.
 
 ## Tech Stack
 

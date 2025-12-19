@@ -2,6 +2,12 @@
 
 An automated system for creating high-quality training programs using specialized AI agents that follow the HIST (High Intensity Skill Training) methodology.
 
+## 🚀 Live Deployment
+
+- **Frontend:** https://pacy-frontend.onrender.com
+- **Backend API:** https://pacy-training-system.onrender.com
+- **Health Check:** https://pacy-training-system.onrender.com/health
+
 ---
 
 ## Overview

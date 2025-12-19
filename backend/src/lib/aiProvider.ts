@@ -69,12 +69,13 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Retry wrapper for OpenAI API calls with exponential backoff
+ * Retry wrapper for AI API calls with exponential backoff
+ * Handles billing/credit errors specifically
  */
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
-  operation = 'OpenAI API call'
+  operation = 'AI API call'
 ): Promise<T> {
   let lastError: any;
 
@@ -83,6 +84,35 @@ async function retryWithBackoff<T>(
       return await fn();
     } catch (error: any) {
       lastError = error;
+
+      // Check for billing/credit errors (don't retry these)
+      const isBillingError =
+        error.status === 402 || // Payment Required
+        error.message?.toLowerCase().includes('credit balance') ||
+        error.message?.toLowerCase().includes('billing') ||
+        error.message?.toLowerCase().includes('insufficient funds') ||
+        error.message?.toLowerCase().includes('add funds') ||
+        error.error?.message?.toLowerCase().includes('credit balance') ||
+        error.error?.message?.toLowerCase().includes('billing');
+
+      if (isBillingError) {
+        const errorMessage = error.message || error.error?.message || 'Credit balance too low';
+        console.error(`[AI Provider] ${operation} - Billing Error:`, {
+          status: error.status,
+          message: errorMessage,
+        });
+
+        // Create a more helpful error message
+        const billingError = new Error(
+          `Anthropic API billing error: ${errorMessage}\n\n` +
+            `Please check your account balance and add funds if needed:\n` +
+            `https://console.anthropic.com/settings/billing\n\n` +
+            `If you recently added credits, they may take a few minutes to activate.`
+        );
+        (billingError as any).status = error.status || 402;
+        (billingError as any).isBillingError = true;
+        throw billingError;
+      }
 
       // Check if error is retryable
       const isRetryable =
@@ -99,6 +129,7 @@ async function retryWithBackoff<T>(
           status: error.status,
           code: error.code,
           message: error.message,
+          error: error.error,
         });
         throw error;
       }
