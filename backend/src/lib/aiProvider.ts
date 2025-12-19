@@ -9,12 +9,14 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { getModelConfig, getBatchModelConfig, ModelConfig } from './modelConfig';
 
-// Initialize OpenAI client with extended timeout
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  timeout: 120000, // 2 minutes
-  maxRetries: 0, // We'll handle retries ourselves
-});
+// Initialize OpenAI client with extended timeout (optional - only if API key is provided)
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 120000, // 2 minutes
+      maxRetries: 0, // We'll handle retries ourselves
+    })
+  : null;
 
 // Initialize Anthropic client with extended timeout
 const anthropic = new Anthropic({
@@ -196,6 +198,13 @@ export async function getCompletion(options: CompletionOptions): Promise<Complet
     return getAnthropicCompletion(options, config);
   }
 
+  // Check if OpenAI is configured for OpenAI models
+  if (!openai) {
+    throw new Error(
+      `Agent "${options.agentName}" is configured to use OpenAI (model: ${config.model}), but OPENAI_API_KEY is not set. Please set the environment variable or switch to Anthropic provider.`
+    );
+  }
+
   // o1 models have different requirements
   if (isReasoningModel(config)) {
     return getReasoningCompletion(options, config);
@@ -370,6 +379,13 @@ export async function getStreamingCompletion(options: StreamOptions): Promise<Co
     return getAnthropicStreamingCompletion(options, config);
   }
 
+  // Check if OpenAI is configured for OpenAI models
+  if (!openai) {
+    throw new Error(
+      `Agent "${options.agentName}" is configured to use OpenAI (model: ${config.model}), but OPENAI_API_KEY is not set. Please set the environment variable or switch to Anthropic provider.`
+    );
+  }
+
   // o1 models don't support streaming - fall back to regular completion
   if (isReasoningModel(config)) {
     const result = await getReasoningCompletion(options, config);
@@ -471,5 +487,10 @@ export function isOpenAIConfigured(): boolean {
  * Get the OpenAI client for direct access if needed
  */
 export function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    throw new Error(
+      'OpenAI client is not configured. Please set OPENAI_API_KEY environment variable.'
+    );
+  }
   return openai;
 }
