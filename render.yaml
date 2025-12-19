@@ -61,7 +61,6 @@ services:
   - type: web
     name: pacy-frontend
     env: static
-    region: frankfurt  # Same region as backend
     buildCommand: |
       npm install
       cd frontend
