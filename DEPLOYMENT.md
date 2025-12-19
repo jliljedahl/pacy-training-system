@@ -1,6 +1,6 @@
 # Deployment Guide - Render
 
-This guide covers deploying the Pacy Training System backend to Render.
+This guide covers deploying both the backend API and frontend static site to Render.
 
 ## Prerequisites
 
@@ -92,40 +92,54 @@ Expected response:
 { "status": "ok", "timestamp": "2025-12-19T..." }
 ```
 
-## Step 5: Update Frontend
+## Step 5: Configure Frontend Environment Variables
 
-Update frontend to use production backend URL.
+The frontend is automatically deployed along with the backend using the `render.yaml` blueprint.
 
-**Option A: Environment variable**
-Create `frontend/.env.production`:
+### Required Environment Variables (Frontend Service)
+
+In Render Dashboard, go to `pacy-frontend` service → "Environment" and add:
+
+**Backend API URL** (auto-configured in render.yaml):
 
 ```
 VITE_API_URL=https://pacy-backend.onrender.com
 ```
 
-**Option B: Update API client**
-Edit `frontend/src/services/api.ts`:
+**Supabase (for client-side auth)**:
+Copy these values from your `backend/.env` file:
 
-```typescript
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD ? 'https://pacy-backend.onrender.com' : 'http://localhost:3001');
+```
+VITE_SUPABASE_URL=<your-supabase-project-url>
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
-## Step 6: Configure CORS
+**⚠️ Note:** The `VITE_` prefix is required for Vite to expose variables to the client.
 
-Update backend CORS settings if needed in `backend/src/index.ts`:
+## Step 6: Verify Frontend Deployment
 
-```typescript
-app.use(
-  cors({
-    origin: [
-      'http://localhost:5173', // Local dev
-      'https://your-frontend-domain.com', // Production frontend
-    ],
-  })
-);
+Once deployed, your frontend will be available at:
+
 ```
+https://pacy-frontend.onrender.com
+```
+
+The frontend automatically:
+
+- ✅ Uses `VITE_API_URL` to connect to backend
+- ✅ Handles SPA routing (all routes serve index.html)
+- ✅ Sets security headers (X-Frame-Options, X-Content-Type-Options)
+- ✅ Connects to backend API via CORS (already configured)
+
+## Step 7: CORS Configuration (Already Done)
+
+Backend CORS is pre-configured in `backend/src/index.ts` to allow:
+
+- `http://localhost:5173` (local development)
+- `https://pacy-frontend.onrender.com` (production)
+- Custom frontend URL via `FRONTEND_URL` environment variable (optional)
+
+No additional configuration needed unless using a custom domain.
 
 ## Database Migrations
 
@@ -190,13 +204,16 @@ Render will automatically rebuild and redeploy.
 
 **Free Tier:**
 
-- Web Service: Free (with limitations: spins down after 15 min inactivity)
+- Backend (Web Service): Free (spins down after 15 min inactivity)
+- Frontend (Static Site): **FREE** (no spin-down, always available)
 - Disk: 1GB included
+- **Total: $0/month** (with cold starts on backend)
 
-**Starter Plan ($7/month):**
+**Starter Plan ($7/month per service):**
 
-- Always-on service
-- No cold starts
+- Backend: $7/month (always-on, no cold starts)
+- Frontend: **FREE** (static sites are always free on Render)
+- **Total: $7/month** (backend only)
 - Better performance
 - 1GB disk included
 

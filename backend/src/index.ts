@@ -36,8 +36,34 @@ import { authMiddleware } from './middleware/auth';
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Middleware - CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173', // Local development
+  'http://localhost:3000', // Alternative local port
+  'https://pacy-frontend.onrender.com', // Production frontend
+];
+
+// Add custom frontend URL if provided
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️  CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true, // Allow cookies/auth headers
+  })
+);
 app.use(express.json());
 app.use(
   fileUpload({

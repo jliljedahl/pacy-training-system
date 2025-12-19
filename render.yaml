@@ -57,9 +57,51 @@ services:
     # Branch to deploy from
     branch: main
 
+  # Frontend Static Site
+  - type: web
+    name: pacy-frontend
+    env: static
+    region: frankfurt  # Same region as backend
+    buildCommand: |
+      npm install
+      cd frontend
+      npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      # Backend API URL
+      - key: VITE_API_URL
+        value: https://pacy-backend.onrender.com
+
+      # Supabase (for client-side auth)
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+
+    # Auto-deploy from GitHub
+    autoDeploy: true
+
+    # Branch to deploy from
+    branch: main
+
+    # Custom headers for SPA routing
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+
+    # SPA routing - serve index.html for all routes
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
 # Deployment notes:
 # 1. Connect your GitHub repository to Render
 # 2. Set environment variables in Render Dashboard (Settings > Environment)
 # 3. Use the same Supabase credentials from backend/.env
-# 4. Frontend will connect to: https://pacy-backend.onrender.com
-# 5. Update frontend API_URL to point to Render backend
+# 4. Frontend will be available at: https://pacy-frontend.onrender.com
+# 5. Backend API is at: https://pacy-backend.onrender.com

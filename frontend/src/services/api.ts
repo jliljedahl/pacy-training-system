@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { supabase } from '../lib/supabase';
 
+// Use environment variable for API URL in production, fallback to relative URL in development
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL ? `${API_URL}/api` : '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -168,8 +171,10 @@ export const projectsApi = {
 // Helper to create SSE promise with auth (GET requests)
 function createSSEPromise(url: string, onProgress?: (message: string) => void) {
   return new Promise((resolve, reject) => {
+    // Prepend API_URL if needed
+    const fullUrl = API_URL && !url.startsWith('http') ? `${API_URL}${url}` : url;
     const abort = createAuthenticatedEventSource(
-      url,
+      fullUrl,
       (data) => {
         if (data.type === 'progress' && onProgress) {
           onProgress(data.message);
@@ -192,8 +197,10 @@ async function createSSEPostPromise(
   body: any,
   onProgress?: (message: string) => void
 ): Promise<any> {
+  // Prepend API_URL if needed
+  const fullUrl = API_URL && !url.startsWith('http') ? `${API_URL}${url}` : url;
   const token = await getAuthToken();
-  const response = await fetch(url, {
+  const response = await fetch(fullUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -434,8 +441,10 @@ async function createSSEPostStream(
   body: any,
   onMessage: (data: any) => void
 ): Promise<string> {
+  // Prepend API_URL if needed
+  const fullUrl = API_URL && !url.startsWith('http') ? `${API_URL}${url}` : url;
   const token = await getAuthToken();
-  const response = await fetch(url, {
+  const response = await fetch(fullUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
